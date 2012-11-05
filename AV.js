@@ -8,14 +8,15 @@
 
 function AV(canvas) {
 		// Initialize Variables
+		var mobileRobots = 200;
 		var frameNum = 0;
-		var mmapUpdate = 100;
+		var mmapUpdate = 1;
 		var scrollTransparency = .3;
 		var initialPlants = 500000;
-		var plantDensity = 100;
+		var plantDensity = 1000;  // The larger the number, the lower the density.  Yeah, I know.
 		
-		var worldSizeX = 2000;
-		var worldSizeY = 2000;
+		var worldSizeX = 20000;
+		var worldSizeY = 20000;
 		
 		initialPlants = (worldSizeX * worldSizeY / plantDensity);
 		
@@ -59,8 +60,9 @@ function AV(canvas) {
 		
 		var roboArray = new Array(11);
 	
-		var Robot1 = new robot(200,50,1,100);
-		var Robot2 = new robot(200,70,1,100);
+		var Robot = [];
+		
+		//var Robot2 = new robot(200,70,1,100);
 		var RoboTreeArray = [];
 	
 	
@@ -82,6 +84,7 @@ function AV(canvas) {
 	    
 	    var canvas2 = document.getElementById("minMapCanvas");
 	    var mmcontext = canvas2.getContext("2d");
+	    var mmTreecontext = canvas2.getContext("2d");
 	    
 	    var canvas3 = document.getElementById("UI");
 	    var uicontext = canvas3.getContext("2d");
@@ -121,7 +124,6 @@ function AV(canvas) {
 		
 	    // clear
 	    context.clearRect(0, 0, canvasSizeX, canvasSizeY);
-	    mmcontext.clearRect(0, 0, mmCanvasSizeX, mmCanvasSizeY);
 	    uicontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
 	    
 
@@ -133,6 +135,15 @@ function AV(canvas) {
 	    });
 	    
 	    // Robot Thinking and doing
+	    for (var irobot3 = 0; irobot3 < Robot.length; irobot3++) {
+	    	Robot[irobot3].robotPsyche();
+	    	Robot[irobot3].robotAction();
+	    	worldWrap(Robot[irobot3]);
+	    	Robot[irobot3].trajectory = calcTrajectory(Robot[irobot3].X, Robot[irobot3].Y, Robot[irobot3].destinationX, Robot[irobot3].destinationY, Robot[irobot3].trajectory, Robot[irobot3].maneuver, Robot[irobot3]);
+	    }
+	    
+	    
+	    /*
 	    Robot1.robotPsyche();
 	    Robot1.robotAction();
 	    worldWrap(Robot1);
@@ -142,6 +153,8 @@ function AV(canvas) {
 	    Robot2.robotAction();
 	    worldWrap(Robot2);
 	    Robot2.trajectory = calcTrajectory(Robot2.X, Robot2.Y, Robot2.destinationX, Robot2.destinationY, Robot2.trajectory, Robot2.maneuver, Robot2);
+	    */
+	    
 	    
 	    // Check to see if window should be scrolling
 	    scrollWindow(context, {x: globalMouseX, y: globalMouseY});
@@ -152,17 +165,45 @@ function AV(canvas) {
 	  	context.fillText(fps, 20, 60);
 	  	
 	  	// Update the Minimap
-	  	//if ((frameNum % mmapUpdate) == 1) {
-		    // Temporary 
+	  	if ((frameNum % mmapUpdate) == 0) {
+		    // Clear minimap
+    	    mmcontext.clearRect(0, 0, mmCanvasSizeX, mmCanvasSizeY);
+    	    
+			/*
+			if ((frameNum % (mmapUpdate * 100)) == 0) {
+				// Draw the trees.
+				mmTreecontext.fillStyle = "rgba(0, 100, 0, .3)";
+				for (var itree = 0; itree < initialPlants; itree++ ) {
+					mmTreecontext.fillRect(Math.floor(RoboTreeArray[itree].X  * mmRatioX), Math.floor(RoboTreeArray[itree].Y * mmRatioY), Math.floor(RoboTreeArray[itree].energy * .6), Math.floor(RoboTreeArray[itree].energy * .6));
+				}
+			}
+			*/
+    	    
 		    //mmcontext.fillRect(0, 0, 1000, 1000);
-		    mmcontext.strokeStyle = 'blue';
+		    mmcontext.strokeStyle = "rgb(0, 0, 250)";
 		    mmcontext.strokeRect(Math.floor(mmViewBoxX), Math.floor(mmViewBoxY), Math.floor(mmViewBoxOppX), Math.floor(mmViewBoxOppY));
-		    uicontext.fillRect(0, 0, 1000, 1000);
-		//}
 		
-		// Draw data on the miniMap
-		mmcontext.fillRect(Math.floor(Robot1.X * mmRatioX), Math.floor(Robot1.Y * mmRatioY), 1, 1);
+			// Draw data on the miniMap
+			// Draw Robot1
+
+			mmcontext.fillStyle = 'black';
+			for (var irobot = 0; irobot < 100; irobot++) {
+				mmcontext.fillRect(Math.floor(Robot[irobot].X * mmRatioX), Math.floor(Robot[irobot].Y * mmRatioY), 2, 2);
+			//mmcontext.fillRect(Math.floor(Robot2.X * mmRatioX), Math.floor(Robot2.Y * mmRatioY), 2, 2);
+			
+			
+			// Draw the contrived Robot1 destination
+			mmcontext.fillStyle = 'red';
+			mmcontext.fillRect(Math.floor(Robot[irobot].destinationX * mmRatioX), Math.floor(Robot[irobot].destinationY * mmRatioY), 2, 2);
+			}
+	
+			// Draw the contrived Robot2 destination
+			//mmcontext.fillRect(Math.floor(Robot2.destinationX * mmRatioX), Math.floor(Robot2.destinationY * mmRatioY), 2, 2);
+
+		}
 		
+		// Clear the UI box
+	    uicontext.fillRect(0, 0, 1000, 1000);
 	}
 	
 	window.onload = function() {
@@ -217,8 +258,9 @@ function AV(canvas) {
 	function drawRobos(context) {
 		var imageheight;
 		var imagewidth;
+
+		// Draw the trees if they are close to the canvas window
 		for (var k3=0; k3<initialPlants; k3++) {
-			//alert (RoboTreeArray[k3].Y);
 			if (RoboTreeArray[k3].X > (canvasOriginX - 20)) {
 				if (RoboTreeArray[k3].Y > (canvasOriginY - 20)) {
 					if (RoboTreeArray[k3].X < (canvasOriginX + 20 + canvasSizeX)) {
@@ -229,10 +271,27 @@ function AV(canvas) {
 				}
 			}
 		}
-	
-		context.drawImage(roboArray[10], Robot1.destinationX - canvasOriginX, Robot1.destinationY - canvasOriginY);
-		// Draw Robot1
+		// Draw Robot[] destinations
 		
+		for (var irobot = 0; irobot < Robot.length; irobot++) {
+			// Draw Robot destinations
+			
+			context.drawImage(roboArray[10], Robot[irobot].destinationX - canvasOriginX, Robot[irobot].destinationY - canvasOriginY);
+			context.save();
+			context.translate((Robot[irobot].X + Robot[irobot].image.width/2) - canvasOriginX, (Robot[irobot].Y + Robot[irobot].image.height/2) - canvasOriginY);
+			context.rotate((-Robot[irobot].trajectory-90)*Math.PI/180);
+			context.drawImage(Robot[irobot].image, 0 - Robot[irobot].image.width/2, 0 - Robot[irobot].image.height/2);
+			context.restore();	
+		}
+
+
+		/*
+		// Draw Robot1 Destination
+		context.drawImage(roboArray[10], Robot1.destinationX - canvasOriginX, Robot1.destinationY - canvasOriginY);
+		// Draw Robot2 Destination
+		context.drawImage(roboArray[10], Robot2.destinationX - canvasOriginX, Robot2.destinationY - canvasOriginY);	
+		
+		// Draw Robot1		
 		context.save();
 		context.translate((Robot1.X + Robot1.image.width/2) - canvasOriginX, (Robot1.Y + Robot1.image.height/2) - canvasOriginY);
 		context.rotate((-Robot1.trajectory-90)*Math.PI/180);
@@ -243,8 +302,9 @@ function AV(canvas) {
 		context.save();
 		context.translate((Robot2.X + Robot2.image.width/2) - canvasOriginX, (Robot2.Y + Robot2.image.height/2) - canvasOriginY);
 		context.rotate((-Robot2.trajectory-90)*Math.PI/180);
-		//context.drawImage(Robot2.image, 0 - Robot2.image.width/2, 0 - Robot2.image.height/2);
+		context.drawImage(Robot2.image, 0 - Robot2.image.width/2, 0 - Robot2.image.height/2);
 		context.restore();
+		*/
 		
 	}
 	
@@ -591,7 +651,7 @@ function AV(canvas) {
 	this.init = function() {
 		for (var i = 0; i < 11; i++) {
 			roboArray[i] = new Image();
-		}
+		}		
 
 		roboArray[0].src = "Tree1.png";
 		roboArray[1].src = "Tree2.png";
@@ -608,10 +668,17 @@ function AV(canvas) {
 		for (var i2 = 0; i2 < initialPlants; i2++) {
 			RoboTreeArray[i2] = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
 			//RoboTreeArray[i2] = new robot(400, 400, 1, 100);
-			RoboTreeArray[i2].image = roboArray[Math.floor(Math.random()*10)];
+			RoboTreeArray[i2].energy = Math.floor(Math.random()*10);
+			RoboTreeArray[i2].image = roboArray[RoboTreeArray[i2].energy];
 		}
-		Robot1.image = roboArray[10];
-		Robot2.image = roboArray[9];
+		
+		for (var irobot2 = 0; irobot2 < mobileRobots; irobot2++) {
+			Robot[irobot2] = new robot(200,50,1,100);
+			Robot[irobot2].image = roboArray[10];
+		}
+
+		//Robot1.image = roboArray[10];
+		//Robot2.image = roboArray[9];
 		
 		mmRatioX = 500 / worldSizeX;
 		mmRatioY = 250 / worldSizeY;

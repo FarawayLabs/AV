@@ -11,24 +11,24 @@
       }
     </style>
 
-<script src="/javascript/AV.js"></script>
+<script src="AV.js"></script>
 <script>
 	left_can = document.getElementById("myCanvas");
 	AVInstance = new AV();
-	AVInstance.init(left_can);
-	AVInstance.loop();
+	AVInstance.init();
+	AVInstance.animate();
 </script>
   </head>
   <body>
-  	<table>
-  	  <tr>
-  	    <td>
-    	  <canvas id="myCanvas" width="800" height="600"></canvas>
-    	</td>
-    	<td>
-    	  <canvas id="minMapCanvas" width="500" height = "300"></canvas>
-    	</td>
-      </tr>	
+  	<table border=0>
+  	  <tr><th rowspan="2"><canvas id="myCanvas" width="800" height="600"></canvas></th>
+    	<td valign="top">
+    	  <canvas id="minMapCanvas" width="500" height = "250"></canvas>
+    	</td></tr>
+    	<tr><td>
+    		<canvas id="UI" width="500" height="340"></canvas>
+    	</td></tr>
+    	<th colspan="2"><canvas id="lowerBuffer" width="1300" height="200"></canvas></th>
     </table>
   </body>
 </html>

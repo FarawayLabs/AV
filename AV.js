@@ -7,89 +7,108 @@
  */
 
 function AV(canvas) {
+		// Initialize Variables
+		var frameNum = 0;
+		var mmapUpdate = 100;
+		var scrollTransparency = .3;
+		var initialPlants = 500000;
+		var plantDensity = 100;
+		
+		var worldSizeX = 2000;
+		var worldSizeY = 2000;
+		
+		initialPlants = (worldSizeX * worldSizeY / plantDensity);
+		
+		var canvasOriginX = 0;
+		var canvasOriginY = 0;
+		
+		var mmCanvasOriginX = 0;
+		var mmCanvasOriginY = 0;
+		
+		var mmRatioX = 0;
+		var mmRatioY = 0;
+		
+		var mmViewBoxX = 0;
+		var mmViewBoxY = 0;
+		var mmViewBoxOppX = 0;
+		var mmViewBoxOppY = 0;
+		
+		var canvasSizeX;
+		var canvasSizeY;
+		var mmCanvasSizeX;
+		var mmCanvasSizeY;
+		var uiCanvasSizeX;
+		var uiCanvasSizeY;
+		
+		var alertDelay = 0;
+		
+		var smallMoveZone = 150;
+		var largeMoveZone = 75;
+		var mousePosBufferZone = 3;
+		var smallMove = 5;
+		var largeMove = 10;
+		
+		var mmMouseX = 200;
+		var mmMouseY = 200;
+		var globalMouseX = 200;
+		var globalMouseY = 200;
+		
+		var timeArray = [];
+		var timeCounter = 0;
+		var fps = 0;
+		
+		var roboArray = new Array(11);
 	
-	alert ("uhoh");
-	var scrollTransparency = .2;
-	var initialPlants = 500000;
+		var Robot1 = new robot(200,50,1,100);
+		var Robot2 = new robot(200,70,1,100);
+		var RoboTreeArray = [];
 	
-	var worldSizeX = 10000;
-	var worldSizeY = 10000;
 	
-	var canvasOriginX = 0;
-	var canvasOriginY = 0;
-	
-	var canvasSizeX;
-	var canvasSizeY;
-	var alertDelay = 0;
-	
-	var smallMoveZone = 150;
-	var largeMoveZone = 75;
-	var mousePosBufferZone = 3;
-	var smallMove = 5;
-	var largeMove = 10;
-	
-	var globalMouseX = 200;
-	var globalMouseY = 200;
-	
-	var timeArray = [];
-	var timeCounter = 0;
-	var fps = 0;
-	
-	var roboArray = new Array(11);
-	for (var i = 0; i < 11; i++) {
-		roboArray[i] = new Image();
-	}
-	
-	roboArray[0].src = "Tree1.png";
-	roboArray[1].src = "Tree2.png";
-	roboArray[2].src = "Tree3.png";
-	roboArray[3].src = "Tree4.png";
-	roboArray[4].src = "Tree5.png";
-	roboArray[5].src = "Tree6.png";
-	roboArray[6].src = "Tree7.png";
-	roboArray[7].src = "Tree8.png";
-	roboArray[8].src = "Tree9.png";
-	roboArray[9].src = "Tree10.png";
-	roboArray[10].src = "robot.png";
-	
-	var Robot1 = new robot(200,50,1,100);
-	var Robot2 = new robot(200,70,1,100);
-	var RoboTreeArray = [];
-	for (var i2 = 0; i2 < initialPlants; i2++) {
-		RoboTreeArray[i2] = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
-		//RoboTreeArray[i2] = new robot(400, 400, 1, 100);
-		RoboTreeArray[i2].image = roboArray[Math.floor(Math.random()*10)];
-	}
-	Robot2.image = roboArray[9];
-	
-	  window.requestAnimFrame = (function(callback) {
+	window.requestAnimFrame = (function(callback) {
 	    return window.requestAnimationFrame || 
 	    window.webkitRequestAnimationFrame || 
 	    window.mozRequestAnimationFrame || 
 	    window.oRequestAnimationFrame || 
 	    window.msRequestAnimationFrame ||
 	    function(callback) {
-	      window.setTimeout(callback, 1000 / 60);
-	    };
-	  })();
+			window.setTimeout(callback, 1000 / 60);
+		};
+ 	})();
 	
-	  function animate(lastTime, myRectangle) {
-	  	
-	
-	    //var canvas = document.getElementById("myCanvas");
+	function animate(lastTime, myRectangle) {
+		frameNum++;
+	    var canvas = document.getElementById("myCanvas");
 	    var context = canvas.getContext("2d");
 	    
-	    canvasSizeX = canvas.width;
+	    var canvas2 = document.getElementById("minMapCanvas");
+	    var mmcontext = canvas2.getContext("2d");
+	    
+	    var canvas3 = document.getElementById("UI");
+	    var uicontext = canvas3.getContext("2d");
+	    
+		// Calculate MiniMap view Box
+	    canvasSizeX = canvas.width;    
 	    canvasSizeY = canvas.height;
-	
+	    
+	    mmCanvasSizeX = canvas2.width;
+	    mmCanvasSizeY = canvas2.height;
+	    
+	    uiCanvasSizeX = canvas3.width;
+	    uiCanvasSizeY = canvas3.height;
+		
+		// Calculate the coordinates of the mini map view window
+		mmViewBoxX = canvasOriginX * ( mmCanvasSizeX / worldSizeX );
+		mmViewBoxY = canvasOriginY * ( mmCanvasSizeY / worldSizeY );
+	    mmViewBoxOppX = (canvasSizeX) * ( mmCanvasSizeX / worldSizeX );
+	   	mmViewBoxOppY = (canvasSizeY) * ( mmCanvasSizeY / worldSizeY );
+
 	    // update
 	    var date = new Date();
 	    var time = date.getTime();
 	    var timeDiff = time - lastTime;
 	    var linearSpeed = 71.7;
 	    // pixels / second
-	    var linearDistEachFrame = linearSpeed * timeDiff / 100;
-	    
+	    var linearDistEachFrame = linearSpeed * timeDiff / 100;   
 	    lastTime = time;
 	
 		// fill the timeArray, used for FPS calculation
@@ -102,10 +121,12 @@ function AV(canvas) {
 		
 	    // clear
 	    context.clearRect(0, 0, canvasSizeX, canvasSizeY);
-	
+	    mmcontext.clearRect(0, 0, mmCanvasSizeX, mmCanvasSizeY);
+	    uicontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
+	    
+
 	    // draw
 	    drawRobos(context);
-		
 	    // request new frame
 	    requestAnimFrame(function() {
 	      animate(lastTime, myRectangle);
@@ -125,12 +146,26 @@ function AV(canvas) {
 	    // Check to see if window should be scrolling
 	    scrollWindow(context, {x: globalMouseX, y: globalMouseY});
 	    
+	    // Update FPS counter
 	    context.fillStyle = "blue";
 		context.font="40px Arial";;
 	  	context.fillText(fps, 20, 60);
-	  }
+	  	
+	  	// Update the Minimap
+	  	//if ((frameNum % mmapUpdate) == 1) {
+		    // Temporary 
+		    //mmcontext.fillRect(0, 0, 1000, 1000);
+		    mmcontext.strokeStyle = 'blue';
+		    mmcontext.strokeRect(Math.floor(mmViewBoxX), Math.floor(mmViewBoxY), Math.floor(mmViewBoxOppX), Math.floor(mmViewBoxOppY));
+		    uicontext.fillRect(0, 0, 1000, 1000);
+		//}
+		
+		// Draw data on the miniMap
+		mmcontext.fillRect(Math.floor(Robot1.X * mmRatioX), Math.floor(Robot1.Y * mmRatioY), 1, 1);
+		
+	}
 	
-	  window.onload = function() {
+	window.onload = function() {
 	    var myRectangle = {
 	      x: 0,
 	      y: 50,
@@ -146,14 +181,38 @@ function AV(canvas) {
 	    
 	    var newcanvas = document.getElementById('myCanvas');
 	    var newcontext = newcanvas.getContext('2d');
+		
+		var newmmcanvas = document.getElementById('minMapCanvas');
+	    var newmmcontext = newmmcanvas.getContext('2d');
 	
 	    newcanvas.addEventListener('mousemove', function(evt) {
 	      var mousePos = getMousePos(newcanvas, evt);
 	      var message = "Mouse position: " + mousePos.x + "," + mousePos.y;
-	      //writeMessage(newcanvas, message);
-	      //scrollWindow(newcanvas, mousePos);
 	    }, false);
-	  };
+	    
+	    newmmcanvas.addEventListener('mousedown', function(evt) {
+          var mmmousePos = getMousePos(newmmcanvas, evt);
+          //alert ("we have explosive");
+          mmMouseX = mmmousePos.x;
+          mmMouseX -= (canvasSizeX + 6);
+          mmMouseY = mmmousePos.y + 806;
+          // alert (mmMouseY);
+          minimapClick();
+        }, false);
+	};
+	
+	function minimapClick() {
+		canvasOriginX = Math.floor(((mmMouseX - (mmViewBoxOppX / 2)) / 500) * (worldSizeX));
+		canvasOriginY = Math.floor(((mmMouseY - (mmViewBoxOppY / 2)) / 250) * (worldSizeY));
+		
+		// Check to make sure map isn't of the top or left
+		if (canvasOriginX < 0) { canvasOriginX = 0; }
+		if (canvasOriginY < 0) { canvasOriginY = 0; }
+		
+		// Check to make sure map isn't off the right or bottom
+		if (canvasOriginX > (worldSizeX - canvasSizeX)) { canvasOriginX = (worldSizeX - canvasSizeX); }
+		if (canvasOriginY > (worldSizeY - canvasSizeY)) { canvasOriginY = (worldSizeY - canvasSizeY); }
+	}
 	
 	function drawRobos(context) {
 		var imageheight;
@@ -172,8 +231,8 @@ function AV(canvas) {
 		}
 	
 		context.drawImage(roboArray[10], Robot1.destinationX - canvasOriginX, Robot1.destinationY - canvasOriginY);
-	
 		// Draw Robot1
+		
 		context.save();
 		context.translate((Robot1.X + Robot1.image.width/2) - canvasOriginX, (Robot1.Y + Robot1.image.height/2) - canvasOriginY);
 		context.rotate((-Robot1.trajectory-90)*Math.PI/180);
@@ -186,10 +245,6 @@ function AV(canvas) {
 		context.rotate((-Robot2.trajectory-90)*Math.PI/180);
 		//context.drawImage(Robot2.image, 0 - Robot2.image.width/2, 0 - Robot2.image.height/2);
 		context.restore();
-		
-	}
-	
-	function growTree(tree) {
 		
 	}
 	
@@ -213,7 +268,6 @@ function AV(canvas) {
 		this.robotChangeDestinationSet = changeDestinationSet;
 		this.robotChangeDestinationRand = changeDestinationRand;
 		this.robotWorldWrap = worldWrap;
-	
 	}
 	
 	
@@ -532,5 +586,35 @@ function AV(canvas) {
 	      x: mouseX,
 	      y: mouseY	
 	    };
+	}
+	
+	this.init = function() {
+		for (var i = 0; i < 11; i++) {
+			roboArray[i] = new Image();
+		}
+
+		roboArray[0].src = "Tree1.png";
+		roboArray[1].src = "Tree2.png";
+		roboArray[2].src = "Tree3.png";
+		roboArray[3].src = "Tree4.png";
+		roboArray[4].src = "Tree5.png";
+		roboArray[5].src = "Tree6.png";
+		roboArray[6].src = "Tree7.png";
+		roboArray[7].src = "Tree8.png";
+		roboArray[8].src = "Tree9.png";
+		roboArray[9].src = "Tree10.png";
+		roboArray[10].src = "robot.png";
+
+		for (var i2 = 0; i2 < initialPlants; i2++) {
+			RoboTreeArray[i2] = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
+			//RoboTreeArray[i2] = new robot(400, 400, 1, 100);
+			RoboTreeArray[i2].image = roboArray[Math.floor(Math.random()*10)];
+		}
+		Robot1.image = roboArray[10];
+		Robot2.image = roboArray[9];
+		
+		mmRatioX = 500 / worldSizeX;
+		mmRatioY = 250 / worldSizeY;
+		
 	}
 }

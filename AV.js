@@ -8,15 +8,15 @@
 
 function AV(canvas) {
 		// Initialize Variables
-		var mobileRobots = 200;
+		var mobileRobots = 500;
 		var frameNum = 0;
 		var mmapUpdate = 1;
 		var scrollTransparency = .3;
 		var initialPlants = 500000;
-		var plantDensity = 1000;  // The larger the number, the lower the density.  Yeah, I know.
+		var plantDensity = 2000;  // The larger the number, the lower the density.  Yeah, I know.
 		
-		var worldSizeX = 20000;
-		var worldSizeY = 20000;
+		var worldSizeX = 8000;
+		var worldSizeY = 6000;
 		
 		initialPlants = (worldSizeX * worldSizeY / plantDensity);
 		
@@ -58,7 +58,7 @@ function AV(canvas) {
 		var timeCounter = 0;
 		var fps = 0;
 		
-		var roboArray = new Array(11);
+		var roboImageArray = new Array(11);
 	
 		var Robot = [];
 		
@@ -187,18 +187,16 @@ function AV(canvas) {
 			// Draw Robot1
 
 			mmcontext.fillStyle = 'black';
-			for (var irobot = 0; irobot < 100; irobot++) {
+			for (var irobot = 0; irobot < mobileRobots; irobot++) {
 				mmcontext.fillRect(Math.floor(Robot[irobot].X * mmRatioX), Math.floor(Robot[irobot].Y * mmRatioY), 2, 2);
-			//mmcontext.fillRect(Math.floor(Robot2.X * mmRatioX), Math.floor(Robot2.Y * mmRatioY), 2, 2);
-			
-			
-			// Draw the contrived Robot1 destination
-			mmcontext.fillStyle = 'red';
-			mmcontext.fillRect(Math.floor(Robot[irobot].destinationX * mmRatioX), Math.floor(Robot[irobot].destinationY * mmRatioY), 2, 2);
+				//mmcontext.fillRect(Math.floor(Robot2.X * mmRatioX), Math.floor(Robot2.Y * mmRatioY), 2, 2);
 			}
-	
-			// Draw the contrived Robot2 destination
-			//mmcontext.fillRect(Math.floor(Robot2.destinationX * mmRatioX), Math.floor(Robot2.destinationY * mmRatioY), 2, 2);
+			
+			mmcontext.fillStyle = 'red';
+			for (var irobot = 0; irobot < mobileRobots; irobot++) {
+				// Draw the contrived Robot destination
+				mmcontext.fillRect(Math.floor(Robot[irobot].destinationX * mmRatioX), Math.floor(Robot[irobot].destinationY * mmRatioY), 2, 2);
+			}
 
 		}
 		
@@ -276,35 +274,13 @@ function AV(canvas) {
 		for (var irobot = 0; irobot < Robot.length; irobot++) {
 			// Draw Robot destinations
 			
-			context.drawImage(roboArray[10], Robot[irobot].destinationX - canvasOriginX, Robot[irobot].destinationY - canvasOriginY);
+			context.drawImage(roboImageArray[11], Robot[irobot].destinationX - canvasOriginX, Robot[irobot].destinationY - canvasOriginY);
 			context.save();
 			context.translate((Robot[irobot].X + Robot[irobot].image.width/2) - canvasOriginX, (Robot[irobot].Y + Robot[irobot].image.height/2) - canvasOriginY);
 			context.rotate((-Robot[irobot].trajectory-90)*Math.PI/180);
 			context.drawImage(Robot[irobot].image, 0 - Robot[irobot].image.width/2, 0 - Robot[irobot].image.height/2);
 			context.restore();	
 		}
-
-
-		/*
-		// Draw Robot1 Destination
-		context.drawImage(roboArray[10], Robot1.destinationX - canvasOriginX, Robot1.destinationY - canvasOriginY);
-		// Draw Robot2 Destination
-		context.drawImage(roboArray[10], Robot2.destinationX - canvasOriginX, Robot2.destinationY - canvasOriginY);	
-		
-		// Draw Robot1		
-		context.save();
-		context.translate((Robot1.X + Robot1.image.width/2) - canvasOriginX, (Robot1.Y + Robot1.image.height/2) - canvasOriginY);
-		context.rotate((-Robot1.trajectory-90)*Math.PI/180);
-		context.drawImage(Robot1.image, 0 - Robot1.image.width/2, 0 - Robot1.image.height/2);
-		context.restore();
-		
-		// Draw Robot2
-		context.save();
-		context.translate((Robot2.X + Robot2.image.width/2) - canvasOriginX, (Robot2.Y + Robot2.image.height/2) - canvasOriginY);
-		context.rotate((-Robot2.trajectory-90)*Math.PI/180);
-		context.drawImage(Robot2.image, 0 - Robot2.image.width/2, 0 - Robot2.image.height/2);
-		context.restore();
-		*/
 		
 	}
 	
@@ -313,7 +289,7 @@ function AV(canvas) {
 		this.Y = Y;
 		this.alive = 1;
 		this.energy = 100;
-		this.image = roboArray[10];
+		this.image = roboImageArray[10];
 		this.destinationX =  300;
 		this.destinationY = 220;
 		this.speed = .1;
@@ -355,22 +331,17 @@ function AV(canvas) {
 							// decides in roboPsyche.
 		this.XVelocity = this.speed * Math.cos(this.trajectory/(180/Math.PI));
 		this.YVelocity = (-1) * this.speed * Math.sin(this.trajectory/(180/Math.PI));
-		// alert ("XVel");
-		// alert (this.XVelocity);
-		// alert (this.YVelocity);
 		this.X += this.XVelocity;
 		this.Y += this.YVelocity;
 	}
 	
 	function roboPsyche() { // This method runs every cycle and is the robot's "brain"
-		//alert ("roboPsyche");
 		var distanceX;
 		var distanceY;
 		var distanceToTarget;
 		distanceX = Math.abs(this.destinationX - this.X);
 		distanceY = Math.abs(this.destinationY - this.Y);
 		distanceToTarget = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2));
-		//alert (distanceToTarget);
 		if (distanceToTarget < this.speed) {
 			//alert ("We're Close");	
 			this.robotChangeDestinationRand();
@@ -462,8 +433,6 @@ function AV(canvas) {
 		var modCurTraj = currentTraj - 180;
 		var modBestTraj = bestTraj - 180;
 		if (modBestTraj < 0) { modBestTraj = 360 + modBestTraj; }
-		
-		//alert (currentTraj);
 		
 		if (currentTraj <= 180) {
 			if ((bestTraj <= (currentTraj + 180)) && (bestTraj > currentTraj)) {
@@ -649,36 +618,37 @@ function AV(canvas) {
 	}
 	
 	this.init = function() {
-		for (var i = 0; i < 11; i++) {
-			roboArray[i] = new Image();
+		for (var i = 0; i < 12; i++) {
+			roboImageArray[i] = new Image();
 		}		
 
-		roboArray[0].src = "Tree1.png";
-		roboArray[1].src = "Tree2.png";
-		roboArray[2].src = "Tree3.png";
-		roboArray[3].src = "Tree4.png";
-		roboArray[4].src = "Tree5.png";
-		roboArray[5].src = "Tree6.png";
-		roboArray[6].src = "Tree7.png";
-		roboArray[7].src = "Tree8.png";
-		roboArray[8].src = "Tree9.png";
-		roboArray[9].src = "Tree10.png";
-		roboArray[10].src = "robot.png";
+		roboImageArray[0].src = "Tree1.png";
+		roboImageArray[1].src = "Tree2.png";
+		roboImageArray[2].src = "Tree3.png";
+		roboImageArray[3].src = "Tree4.png";
+		roboImageArray[4].src = "Tree5.png";
+		roboImageArray[5].src = "Tree6.png";
+		roboImageArray[6].src = "Tree7.png";
+		roboImageArray[7].src = "Tree8.png";
+		roboImageArray[8].src = "Tree9.png";
+		roboImageArray[9].src = "Tree10.png";
+		roboImageArray[10].src = "robot.png";
+		roboImageArray[11].src = "Fruit1.png";
 
 		for (var i2 = 0; i2 < initialPlants; i2++) {
 			RoboTreeArray[i2] = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
 			//RoboTreeArray[i2] = new robot(400, 400, 1, 100);
 			RoboTreeArray[i2].energy = Math.floor(Math.random()*10);
-			RoboTreeArray[i2].image = roboArray[RoboTreeArray[i2].energy];
+			RoboTreeArray[i2].image = roboImageArray[RoboTreeArray[i2].energy];
 		}
 		
 		for (var irobot2 = 0; irobot2 < mobileRobots; irobot2++) {
 			Robot[irobot2] = new robot(200,50,1,100);
-			Robot[irobot2].image = roboArray[10];
+			Robot[irobot2].image = roboImageArray[10];
 		}
 
-		//Robot1.image = roboArray[10];
-		//Robot2.image = roboArray[9];
+		//Robot1.image = roboImageArray[10];
+		//Robot2.image = roboImageArray[9];
 		
 		mmRatioX = 500 / worldSizeX;
 		mmRatioY = 250 / worldSizeY;

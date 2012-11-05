@@ -3,12 +3,40 @@
  *   ---------------------------
  * 
  * 
+ *   Properties of metals
+ *   Titanium: 	density 			4.5 g/cm3
+ *             	Young's Modulus		105-120
+ * 				Melting Point		1670
+ * 				Summary				Titanium is a medium density, medium-strength alloy with a very
+ * 									high melting point.  
+ * 
+ * 	 Bronze: 	density				7.4 - 8.9
+ * 				Young's Modulus		96-120
+ * 				Melting Point		950
+ * 				Summary				Bronze is a high density, medium-strength alloy with a medium
+ * 									melting point
+ * 
+ * 	 Steel:		density				7.85
+ * 				Young's Modulus		200
+ * 				Melting Point		1425 - 1540
+ * 				Summary				Steel is a medium-high density, high-strength alloy with a high
+ * 									melting point
+ * 		
+ * 	 Aluminum:	density				2.5 - 2.8
+ * 				Young's Modulus		69
+ * 				Melting Point		463 - 671
+ * 				Summary				Aluminum is a low density, low-strength alloy with a very low
+ * 									melting point.
+ * 
+ * 
  * 
  */
 
 function AV(canvas) {
 		// Initialize Variables
-		var mobileRobots = 500;
+		
+		// mobile robot density of about 1 robot per 500,000 pixels is suggested, though this will self-adjust quickly if it's too high
+		var mobileRobots = 100;
 		var frameNum = 0;
 		var mmapUpdate = 1;
 		var scrollTransparency = .3;
@@ -58,12 +86,16 @@ function AV(canvas) {
 		var timeCounter = 0;
 		var fps = 0;
 		
+		// images for robot
 		var roboImageArray = new Array(11);
 	
+		// segregated mobile robot array
 		var Robot = [];
-		
-		//var Robot2 = new robot(200,70,1,100);
+		// segregated robo-tree array
 		var RoboTreeArray = [];
+		
+		// experimental fruit target array
+		var FruitTargets = [];
 	
 	
 	window.requestAnimFrame = (function(callback) {
@@ -117,9 +149,9 @@ function AV(canvas) {
 		// fill the timeArray, used for FPS calculation
 		timeArray[timeCounter] = time;
 		timeCounter++;
-		if (timeCounter > 9) {
+		if (timeCounter > 99) {
 			timeCounter = 0;
-			fps = Math.floor(10000 / (timeArray[9]-timeArray[0]));
+			fps = Math.floor(100000 / (timeArray[99]-timeArray[0]));
 		}
 		
 	    // clear
@@ -263,7 +295,9 @@ function AV(canvas) {
 				if (RoboTreeArray[k3].Y > (canvasOriginY - 20)) {
 					if (RoboTreeArray[k3].X < (canvasOriginX + 20 + canvasSizeX)) {
 						if (RoboTreeArray[k3].Y < (canvasOriginY + 20 + canvasSizeY)){
-							context.drawImage(RoboTreeArray[k3].image, Math.floor(RoboTreeArray[k3].X - canvasOriginX), Math.floor(RoboTreeArray[k3].Y - canvasOriginY));				
+							for (var trees = 0; trees < RoboTreeArray[k3].image.length; trees++) {
+								context.drawImage(RoboTreeArray[k3].image[trees], Math.floor(RoboTreeArray[k3].X + RoboTreeArray[k3].imagex[trees] - canvasOriginX), Math.floor(RoboTreeArray[k3].Y + RoboTreeArray[k3].imagey[trees] - canvasOriginY));
+							}				
 						}
 					}
 				}
@@ -273,12 +307,15 @@ function AV(canvas) {
 		
 		for (var irobot = 0; irobot < Robot.length; irobot++) {
 			// Draw Robot destinations
-			
 			context.drawImage(roboImageArray[11], Robot[irobot].destinationX - canvasOriginX, Robot[irobot].destinationY - canvasOriginY);
 			context.save();
-			context.translate((Robot[irobot].X + Robot[irobot].image.width/2) - canvasOriginX, (Robot[irobot].Y + Robot[irobot].image.height/2) - canvasOriginY);
+			context.translate((Robot[irobot].X + Robot[irobot].image[0].width/2) - canvasOriginX, (Robot[irobot].Y + Robot[irobot].image[0].height/2) - canvasOriginY);
 			context.rotate((-Robot[irobot].trajectory-90)*Math.PI/180);
-			context.drawImage(Robot[irobot].image, 0 - Robot[irobot].image.width/2, 0 - Robot[irobot].image.height/2);
+
+			// Draw the robots
+			for (var irobotimg = 0; irobotimg < Robot[irobot].image.length; irobotimg++) {
+				context.drawImage(Robot[irobot].image[0], 0 - Robot[irobot].image[0].width/2, 0 - Robot[irobot].image[0].height/2);
+			}
 			context.restore();	
 		}
 		
@@ -289,7 +326,12 @@ function AV(canvas) {
 		this.Y = Y;
 		this.alive = 1;
 		this.energy = 100;
-		this.image = roboImageArray[10];
+		this.image = [];
+		this.image[0] = roboImageArray[10];
+		this.imagex = [];
+		this.imagex[0] = 0;
+		this.imagey = [];
+		this.imagey[0] = 0;
 		this.destinationX =  300;
 		this.destinationY = 220;
 		this.speed = .1;
@@ -298,6 +340,11 @@ function AV(canvas) {
 		this.XVelocity = 1;
 		this.YVelocity = 1;
 		this.maneuver = 5;
+		
+		this.carriedMetalTitanium = 0;
+		this.carriedMetalAluminum = 0;
+		this.carriedMetalSteel = 0;
+		this.carriedMetalBronze = 0;
 	
 		this.robotAction = roboAction;
 		this.robotPsyche = roboPsyche;
@@ -329,6 +376,14 @@ function AV(canvas) {
 		
 	function roboAction() { // This is the method that causes the robot to act, based on what it
 							// decides in roboPsyche.
+							
+		// Check for Death of robot
+		
+		if (this.energy < 0) {
+			// Robot Dies
+		}				
+		
+		// Change the position of the robot based on its speed	
 		this.XVelocity = this.speed * Math.cos(this.trajectory/(180/Math.PI));
 		this.YVelocity = (-1) * this.speed * Math.sin(this.trajectory/(180/Math.PI));
 		this.X += this.XVelocity;
@@ -594,14 +649,7 @@ function AV(canvas) {
 		if (canvasOriginY < 0) { canvasOriginY = 0; }
 		if (canvasOriginY > (worldSizeY - canvasSizeY - 1)) { canvasOriginY = worldSizeY - canvasSizeY - 1; }  
 	}
-	
-	function writeMessage(newcanvas, message) {
-	    var newcontext = newcanvas.getContext('2d');
-	    //newcontext.clearRect(0, 0, newcanvas.width, newcanvas.height);
-	    newcontext.font = '18pt Calibri';
-	    newcontext.fillStyle = 'black';
-	    newcontext.fillText(message, 10, 25);
-	}
+
 	
 	function getMousePos(newcanvas, evt) {
 		var rect = newcanvas.getBoundingClientRect(), root = document.documentElement;
@@ -618,7 +666,7 @@ function AV(canvas) {
 	}
 	
 	this.init = function() {
-		for (var i = 0; i < 12; i++) {
+		for (var i = 0; i < 100; i++) {
 			roboImageArray[i] = new Image();
 		}		
 
@@ -634,17 +682,29 @@ function AV(canvas) {
 		roboImageArray[9].src = "Tree10.png";
 		roboImageArray[10].src = "robot.png";
 		roboImageArray[11].src = "Fruit1.png";
+		roboImageArray[12].src = "SP1.png";
+		roboImageArray[13].src = "SP2.png";
+		roboImageArray[14].src = "SP3.png";
+		roboImageArray[15].src = "SP4.png";
+		
 
 		for (var i2 = 0; i2 < initialPlants; i2++) {
 			RoboTreeArray[i2] = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
 			//RoboTreeArray[i2] = new robot(400, 400, 1, 100);
 			RoboTreeArray[i2].energy = Math.floor(Math.random()*10);
-			RoboTreeArray[i2].image = roboImageArray[RoboTreeArray[i2].energy];
+			RoboTreeArray[i2].image[0] = roboImageArray[RoboTreeArray[i2].energy];
+			for (var itree = 0; itree < (Math.random() * 10); itree++) {
+				RoboTreeArray[i2].image[itree] = roboImageArray[Math.floor((Math.random() * 4) + 12)];
+				RoboTreeArray[i2].imagex[itree] = Math.floor(Math.random() * 20) - 10;
+				RoboTreeArray[i2].imagey[itree] = Math.floor(Math.random() * 20) - 10;
+			}
 		}
+		
+		//RoboTreeArray[0].image = 
 		
 		for (var irobot2 = 0; irobot2 < mobileRobots; irobot2++) {
 			Robot[irobot2] = new robot(200,50,1,100);
-			Robot[irobot2].image = roboImageArray[10];
+			Robot[irobot2].image[0] = roboImageArray[10];
 		}
 
 		//Robot1.image = roboImageArray[10];

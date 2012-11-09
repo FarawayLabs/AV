@@ -5,26 +5,26 @@
  * 
  *   Properties of metals
  *   Titanium: 	density 			4.5 g/cm3
- *             	Young's Modulus		105-120
+ *             	Young's Modulus		105
  * 				Melting Point		1670
  * 				Summary				Titanium is a medium density, medium-strength alloy with a very
  * 									high melting point.  
  * 
- * 	 Bronze: 	density				7.4 - 8.9
- * 				Young's Modulus		96-120
+ * 	 Bronze: 	density				9.0
+ * 				Young's Modulus		96
  * 				Melting Point		950
  * 				Summary				Bronze is a high density, medium-strength alloy with a medium
  * 									melting point
  * 
- * 	 Steel:		density				7.85
+ * 	 Steel:		density				7.8
  * 				Young's Modulus		200
- * 				Melting Point		1425 - 1540
+ * 				Melting Point		1425
  * 				Summary				Steel is a medium-high density, high-strength alloy with a high
  * 									melting point
  * 		
- * 	 Aluminum:	density				2.5 - 2.8
+ * 	 Aluminum:	density				2.5
  * 				Young's Modulus		69
- * 				Melting Point		463 - 671
+ * 				Melting Point		463
  * 				Summary				Aluminum is a low density, low-strength alloy with a very low
  * 									melting point.
  * 
@@ -36,17 +36,40 @@ function AV(canvas) {
 		// Initialize Variables
 		
 		// mobile robot density of about 1 robot per 500,000 pixels is suggested, though this will self-adjust quickly if it's too high
-		var mobileRobots = 100;
-		var frameNum = 0;
-		var mmapUpdate = 1;
-		var scrollTransparency = .3;
+// Population Parameters
+		var mobileRobots = 500;
 		var initialPlants = 500000;
-		var plantDensity = 2000;  // The larger the number, the lower the density.  Yeah, I know.
+		var plantDensity = 50000;  // The larger the number, the lower the density.  Yeah, I know.
 		
+// World Parameters		
 		var worldSizeX = 8000;
 		var worldSizeY = 6000;
+		var energyIntensity = 200;	// increase energy harvest by this factor
+		var LatheModifier = .5;	// make lathing less energy intensive by this factor
+	
+		var frameNum = 0;
+		var mmapUpdate = 1;		
+		var scrollTransparency = .3;
 		
+		
+		var TreeChance = 3;		
+		var TreeChanceCounter = 0;
 		initialPlants = (worldSizeX * worldSizeY / plantDensity);
+		
+		var minScarceTitanium = 25;
+		var minScarceBronze = 50;
+		var minScarceSteel = 50;
+		var minScarceAluminum = 10;
+		
+		
+// Usert Interface Variables
+		var userPause = 0;
+
+
+
+
+		var scrollLock = 0; 	// Which robot should be followed?
+		var scrollRandom = 0; 	// Should the tracking randomly switch occassionally?
 		
 		var canvasOriginX = 0;
 		var canvasOriginY = 0;
@@ -71,11 +94,12 @@ function AV(canvas) {
 		
 		var alertDelay = 0;
 		
-		var smallMoveZone = 150;
-		var largeMoveZone = 75;
-		var mousePosBufferZone = 3;
-		var smallMove = 5;
-		var largeMove = 10;
+		// Variables pertaining to panning on the map
+		var smallMoveZone = 150;		// distance from edge to allow slow panning
+		var largeMoveZone = 75;			// distance from edge to allow fast panning
+		var mousePosBufferZone = 3;		// distance from edge where no panning occurs.  Should help when the mouse leaves the canvas
+		var smallMove = 5;				// how many pixels to travel for each small move
+		var largeMove = 10;				// how many pixels to travel (in addition) for each large move
 		
 		var mmMouseX = 200;
 		var mmMouseY = 200;
@@ -88,16 +112,156 @@ function AV(canvas) {
 		
 		// images for robot
 		var roboImageArray = new Array(11);
+		
+		for (var i = 0; i < 100; i++) {
+			roboImageArray[i] = new Image();
+		}		
+
+		roboImageArray[0].src = "Tree1.png";
+		roboImageArray[1].src = "Tree2.png";
+		roboImageArray[2].src = "Tree3.png";
+		roboImageArray[3].src = "Tree4.png";
+		roboImageArray[4].src = "Tree5.png";
+		roboImageArray[5].src = "Tree6.png";
+		roboImageArray[6].src = "Tree7.png";
+		roboImageArray[7].src = "Tree8.png";
+		roboImageArray[8].src = "Tree9.png";
+		roboImageArray[9].src = "Tree10.png";
+		roboImageArray[10].src = "robot.png";
+		roboImageArray[11].src = "Fruit1.png";
+		roboImageArray[12].src = "SP1.png";
+		roboImageArray[13].src = "SP2.png";
+		roboImageArray[14].src = "SP3.png";
+		roboImageArray[15].src = "SP4.png";
+		roboImageArray[16].src = "VPylon.png";
+		roboImageArray[17].src = "HPylon.png";
+		roboImageArray[18].src = "Trunk.png";
+		roboImageArray[19].src = "blank.png";
+		roboImageArray[20].src = "Multibracket.png";
+		roboImageArray[21].src = "SolarPylon.png";
 	
 		// segregated mobile robot array
 		var Robot = [];
 		// segregated robo-tree array
 		var RoboTreeArray = [];
-		
+
 		// experimental fruit target array
 		var FruitTargets = [];
-	
-	
+		
+		var componentBlueprint = [];
+				
+		for (test = 0; test < 100; test++) {
+			componentBlueprint[test] = {
+				"code": "00000000",
+				"compName": "null",
+				"dimX0": 0,
+				"dimY0": 0,
+				"dimZ0": 0,
+				"dimX100": 0,
+				"dimY100": 0,
+				"dimZ100": 0,
+				"angleX": 0,
+				"angleY": 0,
+				"angleZ": 0,
+				"angleXjitter": 0,
+				"angleYjitter": 0,
+				'angleZjitter': 0,
+				"yawX": 0,
+				"yawY": 0,
+				"yawZ": 0,
+				"yawXjitter": 0,
+				"yawYjitter": 0,
+				"yawZjitter": 0,
+				"volumeRatio0": 1,
+				"volumeRatio100": 1,
+				"overallScale": 1,
+				"imageSource": roboImageArray[19],
+				"HardTopMin": 0,
+				"HardTopMax": 0,
+				"HardTopSpecify": -1,
+				"HardTopActivate": 1,
+				"HardTopJitter": 0,
+				"HardRadialMin": 0,
+				"HardRadialMax": 0,
+				"HardRadialSpecify": -1,
+				"HardRadialActivate": 1,
+				"HardRadialJitter": 0,
+				"Complexity": 1,
+				"NanolatheCapability": 0,
+				"scaleMax": 1
+			}
+		}
+		
+		
+		componentBlueprint[0].code = "00000000";
+		componentBlueprint[0].compName = "Root Structure";
+		componentBlueprint[0].dimX0 = .03;
+		componentBlueprint[0].dimY0 = .03;
+		componentBlueprint[0].dimZ0 = .02; 
+		componentBlueprint[0].dimX100 = 3;
+		componentBlueprint[0].dimY100 = 3;
+		componentBlueprint[0].dimZ100 = -2;
+		componentBlueprint[0].volumeRatio0 = .01;
+		componentBlueprint[0].volumeRatio100 = .01;
+		componentBlueprint[0].imageSource = roboImageArray[19];
+		
+		 
+		componentBlueprint[1].code = "00000001";
+		componentBlueprint[1].compName = "Pylon";
+		componentBlueprint[1].dimX100 = 1; 
+		componentBlueprint[1].dimY100 = .1;
+		componentBlueprint[1].dimZ100 = .1;
+		componentBlueprint[1].volumeRatio0 = .1;
+		componentBlueprint[1].volumeRatio100 = .1;
+		componentBlueprint[1].imageSource = roboImageArray[16];
+		
+		componentBlueprint[3].code = "00000003";
+		componentBlueprint[3].compName = "SolarPanel";
+		componentBlueprint[3].dimX0 = .005;
+		componentBlueprint[3].dimY0 = .005;
+		componentBlueprint[3].dimZ0 = .1;
+		componentBlueprint[3].dimX100 = 2;
+		componentBlueprint[3].dimY100 = 2;
+		componentBlueprint[3].dimZ100 = .1;
+		componentBlueprint[3].volumeRatio0 = .6666;
+		componentBlueprint[3].volumeRatio100 = .6666;
+		componentBlueprint[3].imageSource = roboImageArray[21];
+		componentBlueprint[3].scaleMax = .5;
+				
+		componentBlueprint[4].code = "00000004";
+		componentBlueprint[4].compName = "TrunkStick";
+		componentBlueprint[4].dimX0 = .01;
+		componentBlueprint[4].dimY0 = .01;
+		componentBlueprint[4].dimZ0 = .1;
+		componentBlueprint[4].dimX100 = 1;
+		componentBlueprint[4].dimY100 = 1;
+		componentBlueprint[4].dimZ100 = 10;
+		componentBlueprint[4].angleZjitter = 10;
+		componentBlueprint[4].yawZ = 20;
+		componentBlueprint[4].yawZjitter = 10;
+		componentBlueprint[4].volumeRatio0 = .7854;
+		componentBlueprint[4].volumeRatio100 = .7854;
+		componentBlueprint[4].NanolatheCapability = 1;
+		componentBlueprint[4].imageSource = roboImageArray[18];
+		
+		
+		componentBlueprint[5].code = "00000005";
+		componentBlueprint[5].compName = "RandomBracket";
+		componentBlueprint[5].dimX0 = .001;
+		componentBlueprint[5].dimY0 = .001;
+		componentBlueprint[5].dimZ0 = .001;
+		componentBlueprint[5].dimX100 = .1;
+		componentBlueprint[5].dimY100 = .1;
+		componentBlueprint[5].dimZ100 = .1;
+		componentBlueprint[5].imageSource = 19;
+		componentBlueprint[5].HardTopMin = 4;
+		componentBlueprint[5].HardTopMax = 6;
+		componentBlueprint[5].HardTopJitter = 15;
+		componentBlueprint[5].volumeRatio0 = .1;
+		componentBlueprint[5].volumeRatio100 = .1;
+		componentBlueprint[5].imageSource = roboImageArray[20];
+		
+		
 	window.requestAnimFrame = (function(callback) {
 	    return window.requestAnimationFrame || 
 	    window.webkitRequestAnimationFrame || 
@@ -110,130 +274,134 @@ function AV(canvas) {
  	})();
 	
 	function animate(lastTime, myRectangle) {
-		frameNum++;
-	    var canvas = document.getElementById("myCanvas");
-	    var context = canvas.getContext("2d");
-	    
-	    var canvas2 = document.getElementById("minMapCanvas");
-	    var mmcontext = canvas2.getContext("2d");
-	    var mmTreecontext = canvas2.getContext("2d");
-	    
-	    var canvas3 = document.getElementById("UI");
-	    var uicontext = canvas3.getContext("2d");
-	    
-		// Calculate MiniMap view Box
-	    canvasSizeX = canvas.width;    
-	    canvasSizeY = canvas.height;
-	    
-	    mmCanvasSizeX = canvas2.width;
-	    mmCanvasSizeY = canvas2.height;
-	    
-	    uiCanvasSizeX = canvas3.width;
-	    uiCanvasSizeY = canvas3.height;
-		
-		// Calculate the coordinates of the mini map view window
-		mmViewBoxX = canvasOriginX * ( mmCanvasSizeX / worldSizeX );
-		mmViewBoxY = canvasOriginY * ( mmCanvasSizeY / worldSizeY );
-	    mmViewBoxOppX = (canvasSizeX) * ( mmCanvasSizeX / worldSizeX );
-	   	mmViewBoxOppY = (canvasSizeY) * ( mmCanvasSizeY / worldSizeY );
-
-	    // update
-	    var date = new Date();
-	    var time = date.getTime();
-	    var timeDiff = time - lastTime;
-	    var linearSpeed = 71.7;
-	    // pixels / second
-	    var linearDistEachFrame = linearSpeed * timeDiff / 100;   
-	    lastTime = time;
+		if (userPause == 0) {
+			frameNum++;
 	
-		// fill the timeArray, used for FPS calculation
-		timeArray[timeCounter] = time;
-		timeCounter++;
-		if (timeCounter > 99) {
-			timeCounter = 0;
-			fps = Math.floor(100000 / (timeArray[99]-timeArray[0]));
-		}
+		    var canvas = document.getElementById("myCanvas");
+		    var context = canvas.getContext("2d");
+		    
+		    var canvas2 = document.getElementById("minMapCanvas");
+		    var mmcontext = canvas2.getContext("2d");
+		    var mmTreecontext = canvas2.getContext("2d");
+		    
+		    var canvas3 = document.getElementById("UI");
+		    var uicontext = canvas3.getContext("2d");
+		    
+			// Calculate MiniMap view Box
+		    canvasSizeX = canvas.width;    
+		    canvasSizeY = canvas.height;
+		    
+		    mmCanvasSizeX = canvas2.width;
+		    mmCanvasSizeY = canvas2.height;
+		    
+		    uiCanvasSizeX = canvas3.width;
+		    uiCanvasSizeY = canvas3.height;
+			
+			// Calculate the coordinates of the mini map view window
+			mmViewBoxX = canvasOriginX * ( mmCanvasSizeX / worldSizeX );
+			mmViewBoxY = canvasOriginY * ( mmCanvasSizeY / worldSizeY );
+		    mmViewBoxOppX = (canvasSizeX) * ( mmCanvasSizeX / worldSizeX );
+		   	mmViewBoxOppY = (canvasSizeY) * ( mmCanvasSizeY / worldSizeY );
+	
+		    // update
+		    var date = new Date();
+		    var time = date.getTime();
+		    var timeDiff = time - lastTime;
+		    var linearSpeed = 71.7;
+		    // pixels / second
+		    var linearDistEachFrame = linearSpeed * timeDiff / 100;   
+		    lastTime = time;
 		
-	    // clear
-	    context.clearRect(0, 0, canvasSizeX, canvasSizeY);
-	    uicontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
-	    
-
-	    // draw
-	    drawRobos(context);
-	    // request new frame
-	    requestAnimFrame(function() {
-	      animate(lastTime, myRectangle);
-	    });
-	    
-	    // Robot Thinking and doing
-	    for (var irobot3 = 0; irobot3 < Robot.length; irobot3++) {
-	    	Robot[irobot3].robotPsyche();
-	    	Robot[irobot3].robotAction();
-	    	worldWrap(Robot[irobot3]);
-	    	Robot[irobot3].trajectory = calcTrajectory(Robot[irobot3].X, Robot[irobot3].Y, Robot[irobot3].destinationX, Robot[irobot3].destinationY, Robot[irobot3].trajectory, Robot[irobot3].maneuver, Robot[irobot3]);
-	    }
-	    
-	    
-	    /*
-	    Robot1.robotPsyche();
-	    Robot1.robotAction();
-	    worldWrap(Robot1);
-	    Robot1.trajectory = calcTrajectory(Robot1.X, Robot1.Y, Robot1.destinationX, Robot1.destinationY, Robot1.trajectory, Robot1.maneuver, Robot1);
-	    
-	    Robot2.robotPsyche();
-	    Robot2.robotAction();
-	    worldWrap(Robot2);
-	    Robot2.trajectory = calcTrajectory(Robot2.X, Robot2.Y, Robot2.destinationX, Robot2.destinationY, Robot2.trajectory, Robot2.maneuver, Robot2);
-	    */
-	    
-	    
-	    // Check to see if window should be scrolling
-	    scrollWindow(context, {x: globalMouseX, y: globalMouseY});
-	    
-	    // Update FPS counter
-	    context.fillStyle = "blue";
-		context.font="40px Arial";;
-	  	context.fillText(fps, 20, 60);
-	  	
-	  	// Update the Minimap
-	  	if ((frameNum % mmapUpdate) == 0) {
-		    // Clear minimap
-    	    mmcontext.clearRect(0, 0, mmCanvasSizeX, mmCanvasSizeY);
-    	    
-			/*
-			if ((frameNum % (mmapUpdate * 100)) == 0) {
-				// Draw the trees.
-				mmTreecontext.fillStyle = "rgba(0, 100, 0, .3)";
-				for (var itree = 0; itree < initialPlants; itree++ ) {
-					mmTreecontext.fillRect(Math.floor(RoboTreeArray[itree].X  * mmRatioX), Math.floor(RoboTreeArray[itree].Y * mmRatioY), Math.floor(RoboTreeArray[itree].energy * .6), Math.floor(RoboTreeArray[itree].energy * .6));
-				}
-			}
-			*/
-    	    
-		    //mmcontext.fillRect(0, 0, 1000, 1000);
-		    mmcontext.strokeStyle = "rgb(0, 0, 250)";
-		    mmcontext.strokeRect(Math.floor(mmViewBoxX), Math.floor(mmViewBoxY), Math.floor(mmViewBoxOppX), Math.floor(mmViewBoxOppY));
-		
-			// Draw data on the miniMap
-			// Draw Robot1
-
-			mmcontext.fillStyle = 'black';
-			for (var irobot = 0; irobot < mobileRobots; irobot++) {
-				mmcontext.fillRect(Math.floor(Robot[irobot].X * mmRatioX), Math.floor(Robot[irobot].Y * mmRatioY), 2, 2);
-				//mmcontext.fillRect(Math.floor(Robot2.X * mmRatioX), Math.floor(Robot2.Y * mmRatioY), 2, 2);
+			// fill the timeArray, used for FPS calculation
+			timeArray[timeCounter] = time;
+			timeCounter++;
+			if (timeCounter > 99) {
+				timeCounter = 0;
+				fps = Math.floor(100000 / (timeArray[99]-timeArray[0]));
 			}
 			
-			mmcontext.fillStyle = 'red';
-			for (var irobot = 0; irobot < mobileRobots; irobot++) {
-				// Draw the contrived Robot destination
-				mmcontext.fillRect(Math.floor(Robot[irobot].destinationX * mmRatioX), Math.floor(Robot[irobot].destinationY * mmRatioY), 2, 2);
+		    // clear
+		    context.clearRect(0, 0, canvasSizeX, canvasSizeY);
+		    uicontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
+		    
+	
+		    // draw
+		    drawRobos(context);
+		    // request new frame
+		    requestAnimFrame(function() {
+		      animate(lastTime, myRectangle);
+		    });
+		    
+		   
+		    // Robot Thinking and doing
+		    for (var irobot3 = 0; irobot3 < Robot.length; irobot3++) {
+		    	Robot[irobot3].robotPsyche();
+		    	Robot[irobot3].robotAction();
+		    	worldWrap(Robot[irobot3]);
+		    	Robot[irobot3].trajectory = calcTrajectory(Robot[irobot3].X, Robot[irobot3].Y, Robot[irobot3].destinationX, Robot[irobot3].destinationY, Robot[irobot3].trajectory, Robot[irobot3].maneuver, Robot[irobot3]);
+		    }
+		    
+		   
+		    // Trees doing tree-stuff
+		    if (TreeChanceCounter == 0) {
+		    	//alert ("Charging");
+		    	for (var i = 0; i < RoboTreeArray.length; i++) {
+	    			RoboTreeArray[i].robotTreeCharge();
+		    	}
+		    }
+		    TreeChanceCounter++;
+		    if (TreeChanceCounter > TreeChance) {
+		    	TreeChanceCounter = 0;
+		    }
+	
+		    // Check to see if window should be scrolling
+		    scrollWindow(context, {x: globalMouseX, y: globalMouseY});
+		    
+		    // Update FPS counter
+		    context.fillStyle = "blue";
+			context.font="40px Arial";;
+		  	context.fillText(fps, 20, 60);
+		  	
+		  	// Update the Minimap
+		  	if ((frameNum % mmapUpdate) == 0) {
+			    // Clear minimap
+	    	    mmcontext.clearRect(0, 0, mmCanvasSizeX, mmCanvasSizeY);
+	    	    
+				// Draw the trees.
+				mmTreecontext.fillStyle = "rgba(0, 100, 0, .5)";
+				for (var itree = 0; itree < initialPlants; itree++ ) {
+					mmTreecontext.beginPath();
+					mmTreecontext.arc(RoboTreeArray[itree].X * mmRatioX, RoboTreeArray[itree].Y * mmRatioY, Math.pow(RoboTreeArray[itree].mass, .1), 0, 2 * Math.PI, false);
+					//mmTreecontext.arc(RoboTreeArray[itree].X + canvasOriginX, RoboTreeArray[itree].Y + canvasOriginY, RoboTreeArray[itree].mass, 0, 2 * Math.PI, false);
+					//mmTreecontext.arc(RoboTreeArray[itree].X, RoboTreeArray[itree].Y, RoboTreeArray[itree].mass, 0, 2 * Math.PI, false);
+					mmTreecontext.fill();
+					//mmTreecontext.fillRect(Math.floor(RoboTreeArray[itree].X  * mmRatioX), Math.floor(RoboTreeArray[itree].Y * mmRatioY), Math.floor(RoboTreeArray[itree].energy * .6), Math.floor(RoboTreeArray[itree].energy * .6));
+				}
+				
+			    //mmcontext.fillRect(0, 0, 1000, 1000);
+			    mmcontext.strokeStyle = "rgb(0, 0, 250)";
+			    mmcontext.strokeRect(Math.floor(mmViewBoxX), Math.floor(mmViewBoxY), Math.floor(mmViewBoxOppX), Math.floor(mmViewBoxOppY));
+			
+				// Draw data on the miniMap
+				// Draw Robot1
+	
+				mmcontext.fillStyle = 'black';
+				for (var irobot = 0; irobot < mobileRobots; irobot++) {
+					mmcontext.fillRect((Robot[irobot].X * mmRatioX), (Robot[irobot].Y * mmRatioY), 2, 2);
+					//mmcontext.fillRect(Math.floor(Robot2.X * mmRatioX), Math.floor(Robot2.Y * mmRatioY), 2, 2);
+				}
+				
+				mmcontext.fillStyle = 'red';
+				for (var irobot = 0; irobot < mobileRobots; irobot++) {
+					// Draw the contrived Robot destination
+					mmcontext.fillRect(Math.floor(Robot[irobot].destinationX * mmRatioX), Math.floor(Robot[irobot].destinationY * mmRatioY), 2, 2);
+				}
+	
 			}
-
+			
+			// Clear the UI box
+		    uicontext.fillRect(0, 0, 1000, 1000);
 		}
-		
-		// Clear the UI box
-	    uicontext.fillRect(0, 0, 1000, 1000);
 	}
 	
 	window.onload = function() {
@@ -273,6 +441,7 @@ function AV(canvas) {
 	};
 	
 	function minimapClick() {
+		scrollLock = -1;
 		canvasOriginX = Math.floor(((mmMouseX - (mmViewBoxOppX / 2)) / 500) * (worldSizeX));
 		canvasOriginY = Math.floor(((mmMouseY - (mmViewBoxOppY / 2)) / 250) * (worldSizeY));
 		
@@ -288,22 +457,61 @@ function AV(canvas) {
 	function drawRobos(context) {
 		var imageheight;
 		var imagewidth;
-
+		
+		// Code to follow a robot
+		if (scrollLock >= 0) {
+			if (scrollRandom == 1) {
+				if (Math.floor(Math.random() * 500) == 10) { 
+					scrollLock = Math.floor(Math.random() * Robot.length); 
+				}
+			}
+			canvasOriginX = Robot[scrollLock].X - (canvasSizeX / 2);
+			canvasOriginY = Robot[scrollLock].Y - (canvasSizeY / 2);
+			
+			scrollOverflow();
+		}
+		
 		// Draw the trees if they are close to the canvas window
+		context.strokStyle = 'brown';
 		for (var k3=0; k3<initialPlants; k3++) {
 			if (RoboTreeArray[k3].X > (canvasOriginX - 20)) {
 				if (RoboTreeArray[k3].Y > (canvasOriginY - 20)) {
 					if (RoboTreeArray[k3].X < (canvasOriginX + 20 + canvasSizeX)) {
 						if (RoboTreeArray[k3].Y < (canvasOriginY + 20 + canvasSizeY)){
-							for (var trees = 0; trees < RoboTreeArray[k3].image.length; trees++) {
+							for (var treeparts = 0; treeparts < RoboTreeArray[k3].components.length; treeparts++) {
+								//alert (RoboTreeArray[k3].components[treeparts].imageSource);
+								var CompScale = (RoboTreeArray[k3].components[treeparts].dimX / RoboTreeArray[k3].components[treeparts].dimX100); 
+								//alert (CompScale);
+								
+								
+								context.save();
+								//context.translate((RoboTreeArray[k3].X - canvasOriginX) - (((RoboTreeArray[k3].components[treeparts].imageSource.width) * CompScale)/2), (RoboTreeArray[k3].Y - canvasOriginY) - (((RoboTreeArray[k3].components[treeparts].imageSource.height) * CompScale)/2));
+								context.translate((RoboTreeArray[k3].X - canvasOriginX), (RoboTreeArray[k3].Y - canvasOriginY));
+								context.rotate(RoboTreeArray[k3].components[treeparts].angleZ*(Math.PI/180));
+								//context.drawImage(RoboTreeArray[k3].components[treeparts].imageSource, (RoboTreeArray[k3].X - canvasOriginX) - (((RoboTreeArray[k3].components[treeparts].imageSource.width) * CompScale)/2), (RoboTreeArray[k3].Y - canvasOriginY) - (((RoboTreeArray[k3].components[treeparts].imageSource.height) * CompScale)/2), CompScale*RoboTreeArray[k3].components[treeparts].imageSource.width, CompScale*RoboTreeArray[k3].components[treeparts].imageSource.height);
+								context.drawImage(RoboTreeArray[k3].components[treeparts].imageSource, 0-(((RoboTreeArray[k3].components[treeparts].imageSource.width) * CompScale)/2),0-(((RoboTreeArray[k3].components[treeparts].imageSource.height) * CompScale)/2), CompScale*RoboTreeArray[k3].components[treeparts].imageSource.width, CompScale*RoboTreeArray[k3].components[treeparts].imageSource.height);
+								context.restore();
+								
+								
+								//context.drawImage(RoboTreeArray[k3].components[treeparts].imageSource, 100, 100);
+								//context.fillRect(RoboTreeArray[k3].X - canvasOriginX, RoboTreeArray[k3].Y - canvasOriginY, 3, 3);
+								/*
+								// Draw branches
+								context.beginPath();
+								context.moveTo(RoboTreeArray[k3].X - canvasOriginX, RoboTreeArray[k3].Y - canvasOriginY);
+								context.lineTo(RoboTreeArray[k3].X + (RoboTreeArray[k3].image[trees].width / 2) + RoboTreeArray[k3].imagex[trees] - canvasOriginX, RoboTreeArray[k3].Y + (RoboTreeArray[k3].image[trees].height / 2) + RoboTreeArray[k3].imagey[trees] - canvasOriginY);
+								context.lineWidth = 2;
+								context.stroke();
+								
+								// Draw Tree
 								context.drawImage(RoboTreeArray[k3].image[trees], Math.floor(RoboTreeArray[k3].X + RoboTreeArray[k3].imagex[trees] - canvasOriginX), Math.floor(RoboTreeArray[k3].Y + RoboTreeArray[k3].imagey[trees] - canvasOriginY));
+								*/
 							}				
 						}
 					}
 				}
 			}
 		}
-		// Draw Robot[] destinations
 		
 		for (var irobot = 0; irobot < Robot.length; irobot++) {
 			// Draw Robot destinations
@@ -321,38 +529,442 @@ function AV(canvas) {
 		
 	}
 	
+	// Definition of the robot object
 	function robot(X, Y, alive, energy) {
 		this.X = X;
 		this.Y = Y;
 		this.alive = 1;
-		this.energy = 100;
+		this.energy = 1000;
 		this.image = [];
 		this.image[0] = roboImageArray[10];
 		this.imagex = [];
 		this.imagex[0] = 0;
 		this.imagey = [];
 		this.imagey[0] = 0;
-		this.destinationX =  300;
-		this.destinationY = 220;
+		this.destinationX =  800;
+		this.destinationY = 190;
 		this.speed = .1;
-		this.maxspeed = 7;
+		this.maxspeed = 3;
 		this.trajectory = 0;
 		this.XVelocity = 1;
 		this.YVelocity = 1;
 		this.maneuver = 5;
 		
-		this.carriedMetalTitanium = 0;
-		this.carriedMetalAluminum = 0;
-		this.carriedMetalSteel = 0;
-		this.carriedMetalBronze = 0;
-	
+		this.mass = 0;
+		this.components = [];
+		
+		this.inventoryMetalTitanium = 0;
+		this.inventoryMetalAluminum = 0;
+		this.inventoryMetalSteel = 0;
+		this.inventoryMetalBronze = 0;
+		
+		this.MetalTitaniumNeeded = 0;
+		this.MetalAluminumNeeded = 0;
+		this.MetalSteelNeeded = 0;
+		this.MetalBronzeNeeded = 0;
+		
+		this.robotTreeCharge = treeCharge;
 		this.robotAction = roboAction;
 		this.robotPsyche = roboPsyche;
 		this.robotChangeDestinationSet = changeDestinationSet;
 		this.robotChangeDestinationRand = changeDestinationRand;
 		this.robotWorldWrap = worldWrap;
+	
 	}
 	
+	/*   Component Type List (codes)
+	 *   -------------------------------------
+	 *		00000000 - (Chassis) Root Structure     // Fixed root structure that extracts metal from the ground
+	 *      00000001 - (Component) Pylon Structure   // A fixed structure that can support additional weight
+	 *      00000002 - (Chassis) Shell
+	 *      00000003 - Solar Panel
+	 * 
+	 * 	Titanimum 4.5
+	 *  Bronze 9.0
+	 *  Steel   7.8
+	 *  Aluminum 2.5
+	 */
+	
+	// Definition of the robot component object
+	//function roboComponent (componentDesc, scale, scalemax, health, titanium, bronze, steel, aluminum, connectsToIndex, growable, imagesource) {
+	function roboComponent (blueprintID, scale, scalemax, health, titanium, bronze, steel, aluminum, parentIndex, HardPointIndex, growable, imagesource, imageRot) {
+		// Populate component parameters from the blueprint
+		this.code = componentBlueprint[blueprintID].code;
+		this.compName = componentBlueprint[blueprintID].compName;
+		this.dimX0 = componentBlueprint[blueprintID].dimX0;
+		this.dimY0 = componentBlueprint[blueprintID].dimY0;
+		this.dimZ0 = componentBlueprint[blueprintID].dimZ0;
+		this.dimX100 = componentBlueprint[blueprintID].dimX100;
+		this.dimY100 = componentBlueprint[blueprintID].dimY100;
+		this.dimZ100 = componentBlueprint[blueprintID].dimZ100;
+		this.angleX = componentBlueprint[blueprintID].angleX;
+		this.angleY = componentBlueprint[blueprintID].angleY;
+		this.angleZ = componentBlueprint[blueprintID].angleZ;
+		this.angleXjitter = componentBlueprint[blueprintID].angleXjitter;
+		this.angleYjitter = componentBlueprint[blueprintID].angleYjitter;
+		this.angleZjitter = componentBlueprint[blueprintID].angleZjitter;
+		this.yawX = componentBlueprint[blueprintID].yawX;
+		this.yawY = componentBlueprint[blueprintID].yawY;
+		this.yawZ = componentBlueprint[blueprintID].yawZ;
+		this.yawXjitter = componentBlueprint[blueprintID].yawXjitter;
+		this.yawYjitter = componentBlueprint[blueprintID].yawYjitter;
+		this.yawZjitter = componentBlueprint[blueprintID].yawZjitter;
+		this.volumeRatio0 = componentBlueprint[blueprintID].volumeRatio0;
+		this.volumeRatio100 = componentBlueprint[blueprintID].volumeRatio100;
+		this.overallScale = componentBlueprint[blueprintID].overallScale;
+		this.imageSource = componentBlueprint[blueprintID].imageSource;
+		this.HardRadialMin = componentBlueprint[blueprintID].HardRadialMin;
+		this.HardRadialMax = componentBlueprint[blueprintID].HardRadialMax;
+		this.HardRadialSpecify = componentBlueprint[blueprintID].HardRadialSpecify;
+		this.HardRadialActivate = componentBlueprint[blueprintID].HardRadialActivate;
+		this.HardRadialJitter = componentBlueprint[blueprintID].HardRadialJitter;
+		this.HardTopMin = componentBlueprint[blueprintID].HardTopMin;
+		this.HardTopMax = componentBlueprint[blueprintID].HardTopMax;
+		this.HardTopSpecify = componentBlueprint[blueprintID].HardTopSpecify;
+		this.HardTopActivate = componentBlueprint[blueprintID].HardTopActivate;
+		this.HardTopJitter = componentBlueprint[blueprintID].HardTopJitter;
+
+		this.Complexity = componentBlueprint[blueprintID].Complexity;
+		this.NanolatheCapability = componentBlueprint[blueprintID].NanolatheCapability;
+		this.scaleMax = componentBlueprint[blueprintID].scaleMax;
+
+		this.dimX = this.dimX0;
+		this.dimY = this.dimY0;
+		this.dimZ = this.dimZ0;
+		
+		this.currentLoad = 0;
+		this.currentLoadAvailable = 0;
+		
+		this.currentVolumeRatio = this.volumeRatio100;
+		
+		if ((this.HardTopSpecify >= this.HardTopMin) && (this.HardTopSpecify <= this.HardTopMax)) {
+			//alert ("one");
+		} else {
+			this.HardTopSpecify = this.HardTopMin + (Math.floor(Math.random() * (this.HardTopMax - this.HardTopMin)));
+		}
+		
+		this.HardTopAngles = [];
+		// Populate the HardTop angles
+		if (this.HardTopSpecify > 0) {
+			for (var i = 0; i < this.HardTopSpecify; i ++) {
+				if (i > 0) {
+					this.HardTopAngles[i] = this.HardTopAngles[i-1] + (360 / this.HardTopSpecify) + (360 / this.HardTopSpecify)*(((Math.random() * 2 * this.HardTopJitter)-this.HardTopJitter)/100);
+				} else {
+					this.HardTopAngles[i] = (Math.random() * 360) + (360 / this.HardTopSpecify) + (360 / this.HardTopSpecify)*(((Math.random() * 2 * this.HardTopJitter)-this.HardTopJitter)/100);
+				}
+				//alert (this.HardTopAngles[i]);		
+			}
+		}
+
+		
+		this.NumberOfChildren = 0;
+		
+		this.MakeupTitanium = titanium;
+		this.MakeupSteel = steel;
+		this.MakeupBronze = bronze;
+		this.MakeupAluminum = aluminum;
+		
+		this.totalMetal = titanium + bronze + steel + aluminum;
+		this.averageStrength = ((titanium * 105) + (bronze * 96) + (steel * 200) + (aluminum * 69)) / this.totalMetal;
+		this.averageDensity = ((titanium * 4.5) + (bronze * 9.0) + (steel * 7.8) + (aluminum * 2.5)) / this.totalMetal;
+		this.averageMelt = ((titanium * 1670) + (bronze * 950) + (steel * 1425) + (aluminum * 463)) / this.totalMetal;
+		
+		this.parentID = parentIndex;
+		this.hardPointID = HardPointIndex;
+		this.imageRotation = imageRot;
+		this.mass = 0; 
+
+		//alert (this.averageStrength);
+		//this.orientationArray = [];
+	
+	}
+	
+	function treeBuilder () {
+		var newTree = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
+		// Make some roots
+		
+		newTree.components[0] = new roboComponent(0, 1.0, 10,.05, 50, 50, 50, 50, -1, 0, 1, roboImageArray[19], 0);
+		
+		// Make a trunk
+		newTree.components[1] = new roboComponent(4, 3.0, 10, .05, 50, 50, 50, 50, 0, 0, 1, roboImageArray[16]),0;
+		newTree.components[newTree.components[1].parentID].NumberOfChildren++;
+		//newTree.components[1] = new roboComponent()
+		
+		// Make a bracket
+		newTree.components[2] = new roboComponent(5, 1.0, 10, .05, 50, 50, 50, 50, 1, 0, 1, roboImageArray[19], 0);
+		newTree.components[newTree.components[2].parentID].NumberOfChildren++;
+		
+		// Make some solar panels
+		newTree.components[3] = new roboComponent(3, 1.0, 3, .05, 50, 50, 50, 50, 2, 0, 1, roboImageArray[21], 0);
+		newTree.components[newTree.components[3].parentID].NumberOfChildren++;
+		// Rotate the piece appropriately
+		newTree.components[3].angleZ = newTree.components[2].HardTopAngles[0]; 
+		
+		newTree.components[4] = new roboComponent(3, 1.0, 3, .05, 50, 50, 50, 50, 2, 1, 1, roboImageArray[21], 0);
+		newTree.components[newTree.components[4].parentID].NumberOfChildren++;
+		newTree.components[4].angleZ = newTree.components[2].HardTopAngles[2];
+		//newTree.components[4].angleZ = 180;
+		
+		/*
+		 * Each tree should have a genetically-controlled list of initial components followed by a list of "and then build..."
+		 * components.  Once the initial list is populated, it goes to the "and then build" list and loops through that list.
+		 * 
+		 * Additionally, genes should control how much of the energy is spent each turn on growing new components, growing fruit,
+		 * and growing solar panels.
+		 */
+	
+		
+		
+		
+		/*
+		// Makes some random solar panel size/locations
+		/for (var itree = 0; itree < (Math.random() * 10); itree++) {
+			newTree.image[itree] = roboImageArray[Math.floor((Math.random() * 4) + 12)];
+			newTree.imagex[itree] = Math.floor(Math.random() * 30) - 15;
+			newTree.imagey[itree] = Math.floor(Math.random() * 30) - 15;
+		}
+		*/
+		
+		return newTree;
+	}
+	
+	// Definition of the proto-ro
+	function roboFoetus (energyNeed, titaniumNeed, bronzeNeed, steelNeed, aluminumNeed) {
+		var energy = 0;
+		var titanium = 0;
+		var bronze = 0;
+		var steel = 0;
+		var aluminum = 0;
+		var energyNeeded = energyNeed;
+		var titaniumNeeded = titaniumNeed;
+		var bronzeNeeded = bronzeNeed;
+		var steelNeeded = steelNeed;
+		var aluminumNeeded = aluminumNeed; 
+	}
+	
+	function LoadCalc (componentArray) {
+		// Add loads
+		for (var i = (componentArray.length - 1); i > 0; i--) {
+			//alert ("component: " + i + " mass: " + componentArray[i].mass + " currentload:" + componentArray[i].currentLoad);
+			componentArray[componentArray[i].parentID].currentLoad += (componentArray[i].mass + componentArray[i].currentLoad);
+		}
+	}
+	
+	function StrengthCalc (componentArray) {
+		// Calc Strength
+		for (var i = (componentArray.length - 1); i > 0; i--) {
+			componentArray[i].currentLoadAvailable = ((componentArray[i].averageStrength * componentArray[i].dimX * componentArray[i].dimY * componentArray[i].dimY) / (componentArray[i].dimZ)) - componentArray[i].currentLoad;
+		}
+	}
+	
+	function treeCharge () {
+	// absorb solar energy
+		// Loop through components and find the solar panels and get energy for each
+
+		for (var i = 0; i < this.components.length; i++) {
+			if (this.components[i].code == "00000003") {
+				// We have a solar panel
+				var energyHarvest = this.components[i].dimX * this.components[i].dimY * energyIntensity;
+				//alert ("energy harvest:" + i + " " + energyHarvest);
+				this.energy += energyHarvest * TreeChance;
+			}	
+		}
+	// use energy to live
+	
+		this.energy -= this.mass;
+		
+	// absorb Metals
+		//this.inventoryMetalTitanium += 1;
+		//this.inventoryMetalBronze += 1;
+		//this.inventoryMetalSteel += 1;
+		//this.inventoryMetalAluminum +=1;
+		
+	// Subtract energy used for normal existence
+		
+	// calculate the mass of each component
+		
+		var totMass = 0;
+		for (var i = 0; i < this.components.length; i++) {
+			this.components[i].mass = this.components[i].dimX * this.components[i].dimY * this.components[i].dimZ * this.components[i].averageDensity * this.components[i].currentVolumeRatio;
+			totMass += this.components[i].mass;
+		}
+		this.mass = totMass;
+		//alert ("tree charging " + totMass);
+		
+	// calculate the load of each component
+		// reset loads
+		// eventually break this out as a separate function to conserve processing
+		for (var i = (this.components.length - 1); i > -1; i--) {
+			this.components.currentLoad = 0;
+		}
+		LoadCalc(this.components);
+
+
+
+	
+	// repair components
+	// (maybe seed growing is repair?  Nah.)
+	
+	
+	
+	for (var i = 0; i < this.components.length; i++) {
+		var oldMass = 0;
+		var newMass = 0;
+		//var NanoLathe = this.components.
+	}
+	
+	
+	
+	// Calculate nanolathe capability
+	/*
+		var NanolatheLimitEnergy = 0;
+		var NanolatheLimitMetal = 0;
+		var TotalComplexity = 0;
+		for (var i = 0; i < this.components.length; i++) {
+			//alert ("one");
+			TotalNanolathe += (this.components[i].NanolatheCapability * ((this.components[i].dimX) / (this.components[i].dimX100)));
+			TotalComplexity += this.components[i].Complexity;
+			//alert ("two"); 
+		}
+		//alert (TotalComplexity);
+		if (TotalNanolathe > ((this.components[0].averageMelt * TotalComplexity) / 1000)) { TotalNanolathe = ((this.components[0].averageMelt * TotalComplexity) / 1000); }
+	*/
+		
+		
+		
+	// Pick 3 (this number will later be controlled genetically) juvenile components to grow.  If they can't be supported load-wise,
+	// grow their supporting components instead.
+	
+	
+
+		// Calculate components under load
+		/*
+		for (var i = 0; i < this.components.length; i++) {
+			if (this.components[i].currentLoadAvailable < (this.components[i].currentLoad * .95)) {
+				//j += this.components[i].Complexity;
+				
+			}			
+		}
+		*/
+	
+		var OriginalLatheEnergy = this.energy / 2;
+		var LatheEnergyRemaining = OriginalLatheEnergy;
+		
+		//var thisLatheMetal = 0;  // for now, let's just use energy
+		// Calculate juvenile components
+		for (var i = (this.components.length - 1); i > 0; i--) {
+			//if ((this.components[i].dimX < this.components[i].dimX100) && (LatheEnergyRemaining > 0)) {
+			if ((LatheEnergyRemaining > 0) && ((this.components[i].dimX / this.components[i].dimX100) < this.components[i].scaleMax)) {
+				// Nanolathe it
+				//alert ("Nanolathing");
+				
+				// Calculate lathe energy available for this lathing
+				var EnergyForThisLathe = OriginalLatheEnergy / 3;
+				if (LatheEnergyRemaining < (OriginalLatheEnergy / 3)) { EnergyForThisLathe = LatheEnergyRemaining; }
+				
+				// Calculate component mass before lathing
+				var oldMass = this.components[i].mass;
+				
+				// Given the amount of energy available to lathe, how much is available for this component
+				var addedMass = ((LatheModifier)*(EnergyForThisLathe) / (this.components[i].averageMelt * this.components[i].Complexity));
+				// Check to make sure the component is growing by less than 10% 
+				var addedMassLimit = this.components[i].mass * .01 * TreeChance;
+				
+				// set mass to be added to the lesser of the two
+				if (addedMass > addedMassLimit) { 
+					addedMass = addedMassLimit;
+					EnergyForThisLathe =  ((addedMass)*(this.components[i].averageMelt * this.components[i].Complexity))/(LatheModifier);
+				}
+				// alert ("Component: " + i + " current mass: " + this.components[i].mass + " addedMass: " + addedMass);
+				
+				var newTotalMass = oldMass + addedMass;
+				
+// Check to make sure supporting components can handle additional mass 
+				
+				
+				// Calc new dimensions based on new mass
+				this.components[i].dimY = Math.pow(((newTotalMass * Math.pow(this.components[i].dimY0,2))/(this.components[i].dimX0 * this.components[i].dimZ0 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
+				this.components[i].dimZ = Math.pow(((newTotalMass * Math.pow(this.components[i].dimZ0,2))/(this.components[i].dimX0 * this.components[i].dimY0 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
+				this.components[i].dimX = Math.pow(((newTotalMass * Math.pow(this.components[i].dimX0,2))/(this.components[i].dimY0 * this.components[i].dimZ0 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
+				//alert (this.components[i].dimY);
+				
+				//Update the component's mass
+				this.components[i].mass = this.components[i].dimX * this.components[i].dimY * this.components[i].dimZ * this.components[i].averageDensity * this.components[i].currentVolumeRatio;
+				
+				//Update the entity's energy
+				LatheEnergyRemaining -= EnergyForThisLathe;
+				this.energy -= EnergyForThisLathe;
+				
+				//alert ("Old mass: " + oldMass + " Added Mass: " + addedMass + " calc'd mass: " + this.components[i].mass);
+				//alert ("Old energy: " + this.energy + " Used Energy: " + (this.components[i].Complexity * this.components[i].averageMelt * addedMass));
+				
+				// Update the total mass of the entity
+				this.mass += addedMass;				
+			}	
+		}
+
+			
+		
+	
+	
+	// if there are any new hard points, populate them using preferred method (at this point, )
+
+	// absorb metals
+		// Use remaining energy to extract metal from soil
+		
+		
+
+
+		
+
+
+
+		/*
+
+
+
+		// Calculate needed stuff
+		
+
+		this.MetalSteelNeeded = 100;  // Dummy values for now
+		this.MetalAluminumNeeded = 100;
+		this.MetalBronzeNeeded = 100;
+		this.MetalTitaniumNeeded = 100;
+		
+		// get solar energy
+		this.energy += 10;
+		
+		
+		// get root-stuff
+		var ScarceResult = (Math.random() * (minScarceTitanium + minScarceBronze + minScarceSteel + minScarceAluminum));
+		
+		//alert (this.inventoryMetalAluminum);
+		if (ScarceResult < minScarceTitanium) {
+			if (this.inventoryMetalAluminum < this.MetalAluminumNeeded) { this.inventoryMetalAluminum += (Math.random() * Math.random()); }
+		} else if (ScarceResult < (this.minScarceTitanium + this.minScarceBronze)) {
+			if (this.inventoryMetalAluminum < MetalBronzeNeeded) { this.inventoryMetalBronze += (Math.random()) * (Math.random()); }
+		} else if (ScarceResult < (this.minScarceTitanium + this.minScarceBronze + this.minScarceSteel)) {
+			if (this.inventoryMetalSteel < MetalSteelNeeded) { this.inventoryMetalSteel += (Math.random()) * (Math.random()); }
+		} else if (ScarceResult < (this.minScarceTitanium + this.minScarceBronze + this.minScarceSteel + this.minScarceTitanium)) {
+			if (this.inventoryMetalTitanium < MetalTitaniumNeeded) { this.inventoryMetalTitanium += (Math.random()) * (Math.random()); }
+		}
+		
+		if (this.energy > (1000 * this.components[2].scale)) {
+			if (this.components[2].scale < this.components[2].scaleMax) {
+				this.energy -= 1000 * this.components[2].scale;
+				
+				this.components[2].scale++;
+				this.components[2].image = roboImageArray[11 + this.components[2].scale];
+			}
+		}
+		*/
+		
+	}
+	
+	function minimumSupport ( Support, index) {
+		
+		return Support;
+	}
 	
 	function changeDestinationRand() {
 		this.destinationX = Math.floor(Math.random()*worldSizeX);
@@ -602,7 +1214,6 @@ function AV(canvas) {
 		robo.Y = robo.Y % worldSizeY;
 	}
 	
-	
 	function scrollWindow(newercontext, mousePos) {
 		newercontext.fillStyle = "rgba(10,50,10," + scrollTransparency + ")";
 		if ((mousePos.x < smallMoveZone) && (mousePos.x > mousePosBufferZone)) {
@@ -644,12 +1255,15 @@ function AV(canvas) {
 			newercontext.fillRect(0, canvasSizeY - smallMoveZone, canvasSizeX, canvasSizeY);
 		}
 		
+		scrollOverflow();  
+	}
+	
+	function scrollOverflow() {
 		if (canvasOriginX < 0) { canvasOriginX = 0; }
 		if (canvasOriginX > (worldSizeX - canvasSizeX - 1)) { canvasOriginX = worldSizeX - canvasSizeX - 1; }
 		if (canvasOriginY < 0) { canvasOriginY = 0; }
-		if (canvasOriginY > (worldSizeY - canvasSizeY - 1)) { canvasOriginY = worldSizeY - canvasSizeY - 1; }  
+		if (canvasOriginY > (worldSizeY - canvasSizeY - 1)) { canvasOriginY = worldSizeY - canvasSizeY - 1; }
 	}
-
 	
 	function getMousePos(newcanvas, evt) {
 		var rect = newcanvas.getBoundingClientRect(), root = document.documentElement;
@@ -666,42 +1280,26 @@ function AV(canvas) {
 	}
 	
 	this.init = function() {
-		for (var i = 0; i < 100; i++) {
-			roboImageArray[i] = new Image();
-		}		
-
-		roboImageArray[0].src = "Tree1.png";
-		roboImageArray[1].src = "Tree2.png";
-		roboImageArray[2].src = "Tree3.png";
-		roboImageArray[3].src = "Tree4.png";
-		roboImageArray[4].src = "Tree5.png";
-		roboImageArray[5].src = "Tree6.png";
-		roboImageArray[6].src = "Tree7.png";
-		roboImageArray[7].src = "Tree8.png";
-		roboImageArray[8].src = "Tree9.png";
-		roboImageArray[9].src = "Tree10.png";
-		roboImageArray[10].src = "robot.png";
-		roboImageArray[11].src = "Fruit1.png";
-		roboImageArray[12].src = "SP1.png";
-		roboImageArray[13].src = "SP2.png";
-		roboImageArray[14].src = "SP3.png";
-		roboImageArray[15].src = "SP4.png";
 		
-
+		// Create the Trees
 		for (var i2 = 0; i2 < initialPlants; i2++) {
+			/*
 			RoboTreeArray[i2] = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
 			//RoboTreeArray[i2] = new robot(400, 400, 1, 100);
 			RoboTreeArray[i2].energy = Math.floor(Math.random()*10);
 			RoboTreeArray[i2].image[0] = roboImageArray[RoboTreeArray[i2].energy];
 			for (var itree = 0; itree < (Math.random() * 10); itree++) {
 				RoboTreeArray[i2].image[itree] = roboImageArray[Math.floor((Math.random() * 4) + 12)];
-				RoboTreeArray[i2].imagex[itree] = Math.floor(Math.random() * 20) - 10;
-				RoboTreeArray[i2].imagey[itree] = Math.floor(Math.random() * 20) - 10;
+				RoboTreeArray[i2].imagex[itree] = Math.floor(Math.random() * 30) - 15;
+				RoboTreeArray[i2].imagey[itree] = Math.floor(Math.random() * 30) - 15;
 			}
+			*/
+			RoboTreeArray[i2] = treeBuilder();
+			
 		}
-		
-		//RoboTreeArray[0].image = 
-		
+
+
+		// Create the mobile Robots
 		for (var irobot2 = 0; irobot2 < mobileRobots; irobot2++) {
 			Robot[irobot2] = new robot(200,50,1,100);
 			Robot[irobot2].image[0] = roboImageArray[10];

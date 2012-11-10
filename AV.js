@@ -42,8 +42,8 @@ function AV(canvas) {
 		var plantDensity = 50000;  // The larger the number, the lower the density.  Yeah, I know.
 		
 // World Parameters		
-		var worldSizeX = 8000;
-		var worldSizeY = 6000;
+		var worldSizeX = 2000;
+		var worldSizeY = 1500;
 		var energyIntensity = 200;	// increase energy harvest by this factor
 		var LatheModifier = .5;	// make lathing less energy intensive by this factor
 	
@@ -69,7 +69,7 @@ function AV(canvas) {
 
 
 		var scrollLock = 0; 	// Which robot should be followed?
-		var scrollRandom = 0; 	// Should the tracking randomly switch occassionally?
+		var scrollRandom = 1; 	// Should the tracking randomly switch occassionally?
 		
 		var canvasOriginX = 0;
 		var canvasOriginY = 0;
@@ -255,7 +255,7 @@ function AV(canvas) {
 		componentBlueprint[5].dimZ100 = .1;
 		componentBlueprint[5].imageSource = 19;
 		componentBlueprint[5].HardTopMin = 4;
-		componentBlueprint[5].HardTopMax = 6;
+		componentBlueprint[5].HardTopMax = 8;
 		componentBlueprint[5].HardTopJitter = 15;
 		componentBlueprint[5].volumeRatio0 = .1;
 		componentBlueprint[5].volumeRatio100 = .1;
@@ -315,9 +315,9 @@ function AV(canvas) {
 			// fill the timeArray, used for FPS calculation
 			timeArray[timeCounter] = time;
 			timeCounter++;
-			if (timeCounter > 99) {
+			if (timeCounter > 9) {
 				timeCounter = 0;
-				fps = Math.floor(100000 / (timeArray[99]-timeArray[0]));
+				fps = Math.floor(10000 / (timeArray[9]-timeArray[0]));
 			}
 			
 		    // clear
@@ -361,14 +361,16 @@ function AV(canvas) {
 		    context.fillStyle = "blue";
 			context.font="40px Arial";;
 		  	context.fillText(fps, 20, 60);
+		  	context.fillText(RoboTreeArray[0].energy, 20, 100);
 		  	
+// Make this its own sub, as in drawRobos
 		  	// Update the Minimap
 		  	if ((frameNum % mmapUpdate) == 0) {
 			    // Clear minimap
 	    	    mmcontext.clearRect(0, 0, mmCanvasSizeX, mmCanvasSizeY);
 	    	    
 				// Draw the trees.
-				mmTreecontext.fillStyle = "rgba(0, 100, 0, .5)";
+				mmTreecontext.fillStyle = "rgba(0, 100, 0, .3)";
 				for (var itree = 0; itree < initialPlants; itree++ ) {
 					mmTreecontext.beginPath();
 					mmTreecontext.arc(RoboTreeArray[itree].X * mmRatioX, RoboTreeArray[itree].Y * mmRatioY, Math.pow(RoboTreeArray[itree].mass, .1), 0, 2 * Math.PI, false);
@@ -471,8 +473,26 @@ function AV(canvas) {
 			scrollOverflow();
 		}
 		
+				
+		for (var irobot = 0; irobot < Robot.length; irobot++) {
+			// Draw Robot destinations
+			context.drawImage(roboImageArray[11], Robot[irobot].destinationX - canvasOriginX, Robot[irobot].destinationY - canvasOriginY);
+			context.save();
+			context.translate((Robot[irobot].X + Robot[irobot].image[0].width/2) - canvasOriginX, (Robot[irobot].Y + Robot[irobot].image[0].height/2) - canvasOriginY);
+			context.rotate((-Robot[irobot].trajectory-90)*Math.PI/180);
+
+			// Draw the robots
+			for (var irobotimg = 0; irobotimg < Robot[irobot].image.length; irobotimg++) {
+				context.drawImage(Robot[irobot].image[0], 0 - Robot[irobot].image[0].width/2, 0 - Robot[irobot].image[0].height/2);
+				// Draw right-overlap and bottom-overlap robot
+			}
+			context.restore();	
+		}
+		//context.drawImage(Robot[0].image[0], -15, -15);
+		
+
+		
 		// Draw the trees if they are close to the canvas window
-		context.strokStyle = 'brown';
 		for (var k3=0; k3<initialPlants; k3++) {
 			if (RoboTreeArray[k3].X > (canvasOriginX - 20)) {
 				if (RoboTreeArray[k3].Y > (canvasOriginY - 20)) {
@@ -512,21 +532,7 @@ function AV(canvas) {
 				}
 			}
 		}
-		
-		for (var irobot = 0; irobot < Robot.length; irobot++) {
-			// Draw Robot destinations
-			context.drawImage(roboImageArray[11], Robot[irobot].destinationX - canvasOriginX, Robot[irobot].destinationY - canvasOriginY);
-			context.save();
-			context.translate((Robot[irobot].X + Robot[irobot].image[0].width/2) - canvasOriginX, (Robot[irobot].Y + Robot[irobot].image[0].height/2) - canvasOriginY);
-			context.rotate((-Robot[irobot].trajectory-90)*Math.PI/180);
 
-			// Draw the robots
-			for (var irobotimg = 0; irobotimg < Robot[irobot].image.length; irobotimg++) {
-				context.drawImage(Robot[irobot].image[0], 0 - Robot[irobot].image[0].width/2, 0 - Robot[irobot].image[0].height/2);
-			}
-			context.restore();	
-		}
-		
 	}
 	
 	// Definition of the robot object
@@ -534,7 +540,7 @@ function AV(canvas) {
 		this.X = X;
 		this.Y = Y;
 		this.alive = 1;
-		this.energy = 1000;
+		this.energy = 500;
 		this.image = [];
 		this.image[0] = roboImageArray[10];
 		this.imagex = [];
@@ -637,10 +643,11 @@ function AV(canvas) {
 		
 		this.currentVolumeRatio = this.volumeRatio100;
 		
+		// Figure out how many hard points to have
 		if ((this.HardTopSpecify >= this.HardTopMin) && (this.HardTopSpecify <= this.HardTopMax)) {
 			//alert ("one");
 		} else {
-			this.HardTopSpecify = this.HardTopMin + (Math.floor(Math.random() * (this.HardTopMax - this.HardTopMin)));
+			this.HardTopSpecify = this.HardTopMin + (Math.round(Math.random() * (this.HardTopMax - this.HardTopMin)));
 		}
 		
 		this.HardTopAngles = [];
@@ -654,9 +661,17 @@ function AV(canvas) {
 				}
 				//alert (this.HardTopAngles[i]);		
 			}
+		} else {
+			this.HardTopAngles[0] = 0;
 		}
 
-		
+		// Array listing hard point children
+		this.HardTopChildren = [];
+		for (var i = 0; i < this.HardTopMax; i++) {
+			this.HardTopChildren[i] = -1;
+		}
+		//alert (this.HardPointChildren.length);
+		// number of children
 		this.NumberOfChildren = 0;
 		
 		this.MakeupTitanium = titanium;
@@ -676,7 +691,59 @@ function AV(canvas) {
 
 		//alert (this.averageStrength);
 		//this.orientationArray = [];
+	 
+	}
 	
+	function treeAddComponent (tree, blueprintID, scale, scaleMax, health, titanium, bronze, steel, aluminum, parentIndex, HardTopIndex, growable, imagesource, imageRot) {
+		var success = 0;
+		// existingComponents is the amount of components in the parent tree
+		var existingComponents = tree.components.length;
+	// if there are no components, 
+	//if (existingComponents == 0) { existingComponents = 1; }
+		
+		// Create array containing the indices of available hard point locations of the parent component
+		var possibleSlots = [];
+		var totPossibleSlots = 0;
+		for (var i = 0; i < tree.components[parentIndex].HardTopSpecify; i++) {
+			if (tree.components[parentIndex].HardTopChildren[i] > 0) {
+			} else {
+				possibleSlots[totPossibleSlots] = i;
+				totPossibleSlots++;
+			}
+		}
+		var destination = -1
+		// If a hard point index is not specified, pick a random one.
+//         if the specified index is greater than then number of specified hard points |OR| specified index < 0 |OR| the Parent component's HardTopChildren array with specified index has a 
+		if ((HardTopIndex >= (tree.components[parentIndex].HardTopSpecify - 1)) || ((HardTopIndex < 0) || (tree.components[parentIndex].HardTopChildren[HardTopIndex] > -1 ))) {
+			destination = Math.floor(Math.random() * (possibleSlots.length));
+		}
+		
+		// if there's a valid destination, create the component
+		if (destination < 0) {
+		} else if (possibleSlots.length > 0) {
+			destination = possibleSlots[destination];
+			//alert (destination);
+			// Instantiate component
+			tree.components[existingComponents] = new roboComponent(blueprintID, scale, scaleMax, health, titanium, bronze, steel, aluminum, parentIndex, destination, growable, imagesource, imageRot);
+			// Set the rotation angle for the new component
+			tree.components[existingComponents].angleZ = tree.components[parentIndex].HardTopAngles[destination];
+			// Set the hard parent's hard point index for the new component
+			tree.components[existingComponents].hardPointID = destination;
+			// Set the parent's HardTopChildren array item to "occupied" so it won't be selected later
+			tree.components[parentIndex].HardTopChildren[destination] = tree.components.length;
+			// Increment the parent's children number
+			tree.components[parentIndex].NumberOfChildren++;
+			success = 1;
+		}
+		
+		/*
+		if (existingComponents != 1) {
+			tree.components[parentIndex].NumberOfChildren++;
+			//tree.components[existingComponents].angleZ = tree.components[existing]
+		} 
+		*/
+		
+		return success;
 	}
 	
 	function treeBuilder () {
@@ -694,17 +761,25 @@ function AV(canvas) {
 		newTree.components[2] = new roboComponent(5, 1.0, 10, .05, 50, 50, 50, 50, 1, 0, 1, roboImageArray[19], 0);
 		newTree.components[newTree.components[2].parentID].NumberOfChildren++;
 		
-		// Make some solar panels
+		// Make a solar panel explicitly
+		/*
 		newTree.components[3] = new roboComponent(3, 1.0, 3, .05, 50, 50, 50, 50, 2, 0, 1, roboImageArray[21], 0);
 		newTree.components[newTree.components[3].parentID].NumberOfChildren++;
 		// Rotate the piece appropriately
 		newTree.components[3].angleZ = newTree.components[2].HardTopAngles[0]; 
+		newTree.components[2].HardTopChildren[0] = 3;
+		*/
+		var foo = treeAddComponent(newTree, 3, 1.0, 3, .05, 50, 50, 50, 50, 2, -1, 1, roboImageArray[21], 0);
+		foo = treeAddComponent(newTree, 3, 1.0, 3, .05, 50, 50, 50, 50, 2, -1, 1, roboImageArray[21], 0);
 		
-		newTree.components[4] = new roboComponent(3, 1.0, 3, .05, 50, 50, 50, 50, 2, 1, 1, roboImageArray[21], 0);
-		newTree.components[newTree.components[4].parentID].NumberOfChildren++;
-		newTree.components[4].angleZ = newTree.components[2].HardTopAngles[2];
-		//newTree.components[4].angleZ = 180;
+		//alert ("abort");
+		/*
+		newTree.components[5] = new roboComponent(3, 1.0, 3, .05, 50, 50, 50, 50, 2, 1, 1, roboImageArray[21], 0);
+		newTree.components[newTree.components[5].parentID].NumberOfChildren++;
+		newTree.components[5].angleZ = newTree.components[2].HardTopAngles[2];
+		*/
 		
+	
 		/*
 		 * Each tree should have a genetically-controlled list of initial components followed by a list of "and then build..."
 		 * components.  Once the initial list is populated, it goes to the "and then build" list and loops through that list.
@@ -713,9 +788,6 @@ function AV(canvas) {
 		 * and growing solar panels.
 		 */
 	
-		
-		
-		
 		/*
 		// Makes some random solar panel size/locations
 		/for (var itree = 0; itree < (Math.random() * 10); itree++) {
@@ -760,15 +832,18 @@ function AV(canvas) {
 	function treeCharge () {
 	// absorb solar energy
 		// Loop through components and find the solar panels and get energy for each
-
+		var solarPanels = 0;
 		for (var i = 0; i < this.components.length; i++) {
 			if (this.components[i].code == "00000003") {
+				solarPanels++;
 				// We have a solar panel
 				var energyHarvest = this.components[i].dimX * this.components[i].dimY * energyIntensity;
 				//alert ("energy harvest:" + i + " " + energyHarvest);
 				this.energy += energyHarvest * TreeChance;
 			}	
 		}
+		
+		//if (solarPanels > 2) { alert ("we have more than two"); }
 	// use energy to live
 	
 		this.energy -= this.mass;
@@ -800,8 +875,22 @@ function AV(canvas) {
 		LoadCalc(this.components);
 
 
-
+	// start growing new components
 	
+	if (this.energy > 1000) {
+		//alert ("Component added!");
+		if (treeAddComponent( this, 3, 1.0, 3, .05, 50, 50, 50, 50, 2, -1, 1, roboImageArray[21], 0)) {
+			//alert ("added");
+			this.energy -= 900;
+		}
+		//alert ("abort");
+	}
+
+
+	//if (Math.floor(Math.random() * 10000) == 500) { alert (this.energy + " length: " + this.components.length + " mass: " + this.mass); }
+	if (this.energy > 1000) { 
+		//alert ("over1000!");
+	}
 	// repair components
 	// (maybe seed growing is repair?  Nah.)
 	
@@ -869,6 +958,7 @@ function AV(canvas) {
 				var addedMass = ((LatheModifier)*(EnergyForThisLathe) / (this.components[i].averageMelt * this.components[i].Complexity));
 				// Check to make sure the component is growing by less than 10% 
 				var addedMassLimit = this.components[i].mass * .01 * TreeChance;
+				if (addedMassLimit < .0000001) { addedMassLimit = .0000001; }
 				
 				// set mass to be added to the lesser of the two
 				if (addedMass > addedMassLimit) { 

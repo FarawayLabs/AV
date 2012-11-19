@@ -39,7 +39,7 @@ function AV(canvas) {
 // Population Parameters
 		var mobileRobots = 1;
 		var initialPlants = 500000;
-		var plantDensity = 10000;  // The larger the number, the lower the density.  Yeah, I know.
+		var plantDensity = 20000;  // The larger the number, the lower the density.  Yeah, I know.
 		
 // World Parameters		
 		var worldSizeX = 1000;
@@ -275,9 +275,9 @@ function AV(canvas) {
 		componentBlueprint[5].dimX0 = .001;
 		componentBlueprint[5].dimY0 = .001;
 		componentBlueprint[5].dimZ0 = .001;
-		componentBlueprint[5].dimX100 = .1;
-		componentBlueprint[5].dimY100 = .1;
-		componentBlueprint[5].dimZ100 = .1;
+		componentBlueprint[5].dimX100 = 1;
+		componentBlueprint[5].dimY100 = 1;
+		componentBlueprint[5].dimZ100 = 1;
 		componentBlueprint[5].imageSource = 19;
 		componentBlueprint[5].HardTopMin = 4;
 		componentBlueprint[5].HardTopMax = 8;
@@ -300,11 +300,26 @@ function AV(canvas) {
 		componentBlueprint[6].code = "00000006";
 		*/
 		
-		componentBlueprint[6] = componentBlueprint[4];
+		
 		componentBlueprint[6].code = "00000006";
 		componentBlueprint[6].compName = "Branch";
 		componentBlueprint[6].imageSource = roboImageArray[22];
 		componentBlueprint[6].scaleMax = .4;
+		componentBlueprint[6].dimX0 = .1;
+		componentBlueprint[6].dimY0 = .01;
+		componentBlueprint[6].dimZ0 = .01;
+		componentBlueprint[6].dimX100 = 10;
+		componentBlueprint[6].dimY100 = 1;
+		componentBlueprint[6].dimZ100 = 1;
+		componentBlueprint[6].angleZjitter = 10;
+		componentBlueprint[6].yawZ = 20;
+		componentBlueprint[6].yawZjitter = 10;
+		componentBlueprint[6].volumeRatio0 = .7854;
+		componentBlueprint[6].volumeRatio100 = .7854;
+		componentBlueprint[6].NanolatheCapability = 1;
+		componentBlueprint[6].HardTopMin = 1;
+		componentBlueprint[6].HardTopMax = 1;
+
 		
 	window.requestAnimFrame = (function(callback) {
 	    return window.requestAnimationFrame || 
@@ -449,7 +464,7 @@ function AV(canvas) {
 				mmTreecontext.fillStyle = "rgba(0, 100, 0, .3)";
 				for (var itree = 0; itree < initialPlants; itree++ ) {
 					mmTreecontext.beginPath();
-					mmTreecontext.arc(RoboTreeArray[itree].X * mmRatioX, RoboTreeArray[itree].Y * mmRatioY, Math.pow(RoboTreeArray[itree].mass, .1), 0, 2 * Math.PI, false);
+					mmTreecontext.arc(RoboTreeArray[itree].X * mmRatioX, RoboTreeArray[itree].Y * mmRatioY, Math.pow(RoboTreeArray[itree].mass, .2), 0, 2 * Math.PI, false);
 					//mmTreecontext.arc(RoboTreeArray[itree].X + canvasOriginX, RoboTreeArray[itree].Y + canvasOriginY, RoboTreeArray[itree].mass, 0, 2 * Math.PI, false);
 					//mmTreecontext.arc(RoboTreeArray[itree].X, RoboTreeArray[itree].Y, RoboTreeArray[itree].mass, 0, 2 * Math.PI, false);
 					mmTreecontext.fill();
@@ -596,8 +611,8 @@ function AV(canvas) {
 								
 								context.save();
 								//context.translate((RoboTreeArray[k3].X - canvasOriginX) - (((RoboTreeArray[k3].components[treeparts].imageSource.width) * CompScale)/2), (RoboTreeArray[k3].Y - canvasOriginY) - (((RoboTreeArray[k3].components[treeparts].imageSource.height) * CompScale)/2));
-								context.translate((RoboTreeArray[k3].X - canvasOriginX), (RoboTreeArray[k3].Y - canvasOriginY));
-								context.rotate(RoboTreeArray[k3].components[treeparts].angleZ*(Math.PI/180));
+								context.translate((RoboTreeArray[k3].X + RoboTreeArray[k3].components[treeparts].originX - canvasOriginX), (RoboTreeArray[k3].Y + RoboTreeArray[k3].components[treeparts].originY - canvasOriginY));
+								context.rotate((-1)*(RoboTreeArray[k3].components[treeparts].angleZ*(Math.PI/180)));
 								//context.drawImage(RoboTreeArray[k3].components[treeparts].imageSource, (RoboTreeArray[k3].X - canvasOriginX) - (((RoboTreeArray[k3].components[treeparts].imageSource.width) * CompScale)/2), (RoboTreeArray[k3].Y - canvasOriginY) - (((RoboTreeArray[k3].components[treeparts].imageSource.height) * CompScale)/2), CompScale*RoboTreeArray[k3].components[treeparts].imageSource.width, CompScale*RoboTreeArray[k3].components[treeparts].imageSource.height);
 								context.drawImage(RoboTreeArray[k3].components[treeparts].imageSource, 0-(((RoboTreeArray[k3].components[treeparts].imageSource.width) * CompScale)/2),0-(((RoboTreeArray[k3].components[treeparts].imageSource.height) * CompScale)/2), CompScale*RoboTreeArray[k3].components[treeparts].imageSource.width, CompScale*RoboTreeArray[k3].components[treeparts].imageSource.height);
 								context.restore();
@@ -730,6 +745,17 @@ function AV(canvas) {
 		this.dimY = this.dimY0;
 		this.dimZ = this.dimZ0;
 		
+		// The location of the start of the component
+		this.originX = 0;
+		this.originY = 0;
+		this.originZ = 0;
+		
+		// The location of the end of the component
+		this.endX = 0;
+		this.endY = 0;
+		this.endZ = 0;
+		
+		
 		this.currentLoad = 0;
 		this.currentLoadAvailable = 0;
 		
@@ -747,10 +773,13 @@ function AV(canvas) {
 		if (this.HardTopSpecify > 0) {
 			for (var i = 0; i < this.HardTopSpecify; i ++) {
 				if (i > 0) {
-					this.HardTopAngles[i] = this.HardTopAngles[i-1] + (360 / this.HardTopSpecify) + (360 / this.HardTopSpecify)*(((Math.random() * 2 * this.HardTopJitter)-this.HardTopJitter)/100);
+					this.HardTopAngles[i] = this.HardTopAngles[i-1] + (360 / this.HardTopSpecify) + (360 / this.HardTopSpecify)*(((Math.random() * (2 * this.HardTopJitter))-this.HardTopJitter)/100);
 				} else {
-					this.HardTopAngles[i] = (Math.random() * 360) + (360 / this.HardTopSpecify) + (360 / this.HardTopSpecify)*(((Math.random() * 2 * this.HardTopJitter)-this.HardTopJitter)/100);
+					this.HardTopAngles[i] = (Math.random() * 360) + (360 / this.HardTopSpecify) + (360 / this.HardTopSpecify)*(((Math.random() * (2 * this.HardTopJitter))-this.HardTopJitter)/100);
 				}
+				if (this.HardTopAngles[i] > 360) { this.HardTopAngles[i] -= 360; }
+				//alert (i + " " + this.HardTopAngles[i]);
+				//alert ("HardTopJitter: " + this.HardTopJitter);
 				//alert (this.HardTopAngles[i]);		
 			}
 		} else {
@@ -788,7 +817,7 @@ function AV(canvas) {
 	
 	function treeAddComponent (tree, blueprintID, scale, scaleMax, health, titanium, bronze, steel, aluminum, parentIndex, HardTopIndex, growable, imagesource, imageRot) {
 		var success = 0;
-		// existingComponents is the amount of components in the parent tree
+			// existingComponents is the amount of components in the parent tree
 		var existingComponents = tree.components.length;
 	// if there are no components, 
 	//if (existingComponents == 0) { existingComponents = 1; }
@@ -834,7 +863,6 @@ function AV(canvas) {
 			//tree.components[existingComponents].angleZ = tree.components[existing]
 		} 
 		*/
-		
 		return success;
 	}
 	
@@ -973,7 +1001,7 @@ function AV(canvas) {
 	// start growing new components
 	
 		if (this.lastHarvest > (this.mass + this.components.length)) {
-			if (this.growDelayCounter > 1000) {
+			if (this.growDelayCounter > 10) {
 			// It is time to grow a new component		
 	
 			// Find a blank hard point
@@ -995,9 +1023,9 @@ function AV(canvas) {
 
 				if (possibleDestinations.length >= 0) {
 					// Pick a random 
-					var componentDi = Math.floor(Math.random()*(possibleDestinations.length / 2));
-					var destinationComponent = possibleDestinations[2 * componentDi];
-					var destinationHardPoint = possibleDestinations[2 * componentDi + 1];
+					var componentDi = Math.floor(Math.random()*(possibleDestinations.length / 2));  // roll a di
+					var destinationComponent = possibleDestinations[2 * componentDi];				// save the destination component index
+					var destinationHardPoint = possibleDestinations[2 * componentDi + 1];			// save the hard point id
 					
 			/*		
 					for (var i = 0; i < possibleDestinations.length; i++ ) {
@@ -1020,8 +1048,8 @@ function AV(canvas) {
 						ComponentType = 3;
 					} else if (ComponentType == 1 ){
 						// Make a stick
-						//ComponentType = 6;
-						ComponentType = 3;
+						ComponentType = 6;
+						//ComponentType = 3;
 					} else {
 						// Make a seedpod;
 						ComponentType = 3;
@@ -1038,11 +1066,16 @@ function AV(canvas) {
 					if (ComponentType == 8) { //ComponentType = 3; 
 						}
 					
+					// if parent is 4 or 6, make a multibracket
 					
 					
+					if ((this.components[destinationComponent].code == "00000004") ||(this.components[destinationComponent].code == "00000006")) {
+						ComponentType = 5;
+					}
 					
-					
-					
+					if (this.components.length > 30) {
+						ComponentType = 3;
+					}
 					
 					//alert ("Creating a component of type " + ComponentType + " on HardTop Index " + destinationHardPoint + " on a parent that is component number " + destinationComponent + " hardTopSpecify: " + this.components[destinationComponent].HardTopSpecify);
 					
@@ -1053,8 +1086,8 @@ function AV(canvas) {
 					
 			// If the parent component only has one remaining slot, make it a stick
 			// Create the component
-					// if (treeAddComponent( this, ComponentType, 1.0, 3, .05, 50, 50, 50, 50, destinationComponent, destinationHardPoint, 1, roboImageArray[21], 0)) {
-					if (treeAddComponent( this, 3 , 1.0, 3, .05, 50, 50, 50, 50, 2, 3, 1, roboImageArray[21], 0)) {	
+					if (treeAddComponent( this, ComponentType, 1.0, 3, .05, 50, 50, 50, 50, destinationComponent, destinationHardPoint, 1, roboImageArray[21], 0)) {
+					//if (treeAddComponent( this, 3 , 1.0, 3, .05, 50, 50, 50, 50, 2, 3, 1, roboImageArray[21], 0)) {	
 						//alert ("added");
 						//if (Math.random() * 999 == 200) { alert (this.energy); }
 						this.energy = this.energy - 900;
@@ -1137,7 +1170,7 @@ function AV(canvas) {
 				var addedMass = ((LatheModifier)*(EnergyForThisLathe) / (this.components[i].averageMelt * this.components[i].Complexity));
 				// Check to make sure the component is growing by less than 10% 
 				var addedMassLimit = this.components[i].mass * .01 * TreeChance;
-				if (addedMassLimit < .0000001) { addedMassLimit = .0000001; }
+				if (addedMassLimit < .00001) { addedMassLimit = .00001; }
 				
 				// set mass to be added to the lesser of the two
 				if (addedMass > addedMassLimit) { 
@@ -1228,6 +1261,25 @@ function AV(canvas) {
 		}
 		*/
 		
+		// Update the origins and ends of each component
+		var parentX = 0;
+		var parentY = 0;
+		var parentZ = 0;
+		for (var i = 0; i < this.components.length; i++) {
+			// Get parent component's end coordinates
+			if (this.components[i].parentID > -1) {
+				// Get parent component's end coordinates
+				this.components[i].originX = this.components[this.components[i].parentID].endX;
+				this.components[i].originY = this.components[this.components[i].parentID].endY;
+				this.components[i].originZ = this.components[this.components[i].parentID].endZ;
+				
+			}
+			// update this component's end coordinates
+			this.components[i].endX = this.components[i].originX + (this.components[i].dimX * Math.cos((this.components[i].angleZ) * Math.PI/180) * 5);
+			this.components[i].endY = this.components[i].originY - (this.components[i].dimX * Math.sin((this.components[i].angleZ) * Math.PI/180) * 5);
+			//alert (this.components[i].angleZ); 	
+		}
+		//alert (Math.cos());
 	}
 	
 	function minimumSupport ( Support, index) {
@@ -1654,22 +1706,57 @@ function AV(canvas) {
 	    var CPcontext = cpcanvas.getContext('2d');
 	
 		if (closestType == "Robot") {
-			CPRoboInfoWriter(Robot[closestIndex], CPcontext);
+			CPRoboInfoWriter(Robot[closestIndex], CPcontext, closestIndex);
 		} else if (closestType == "RoboTree") {
-			CPRoboInfoWriter(RoboTreeArray[closestIndex], CPcontext);
+			CPRoboInfoWriter(RoboTreeArray[closestIndex], CPcontext, closestIndex);
 			//CPcontext.fillText("Robot Energy: " + Math.floor(RoboTreeArray[closestIndex].energy * 10)/10, textX, textY);
 		}
 		
 	}
 	
-	function CPRoboInfoWriter(selectedBot, CPcontext) {
+	function CPRoboInfoWriter(selectedBot, CPcontext, selectedIndex) {
 		var textX = 50;
 		var textY = 10;
-		CPcontext.font = "10px Arial";
-		CPcontext.fillText("Robot Energy: " + Math.floor(selectedBot.energy * 10)/10, textX, textY);
+		var usedHardPoints = 0;
+		CPcontext.font = "9px Arial";
+		CPcontext.fillText("Robot Number: " + selectedIndex, textX, textY);
+		textX += 85;
+		CPcontext.fillText("Energy: " + Math.floor(selectedBot.energy * 10)/10, textX, textY);
+		textX += 85;
+		CPcontext.fillText("Mass: " + Math.floor(selectedBot.mass * 10)/10, textX, textY);
+		textX += 60;
+		CPcontext.fillText("Components: " + selectedBot.components.length, textX, textY);
+		textX = 50;
+		textY -= 12;
 		for (var i = 0; i < selectedBot.components.length; i++) {
-			textY += 15;
-			CPcontext.fillText("Robot Component" + i +  ": " + selectedBot.components[i].compName, textX, textY);
+			usedHardPoints = 0;
+			textY += 24;
+			CPcontext.fillText("Comp" + i +  ": " + selectedBot.components[i].compName, textX, textY);
+			textX = 160;
+			for (var j = 0; j < selectedBot.components[i].HardTopSpecify; j++) {
+				if (selectedBot.components[i].HardTopChildren[j] > -1) {
+					usedHardPoints++;
+				}
+			}
+			CPcontext.fillText("HdPts " + usedHardPoints +  "/" + selectedBot.components[i].HardTopSpecify, textX, textY);
+			textX += 50;
+			CPcontext.fillText("Angle " + Math.floor(selectedBot.components[i].angleZ), textX, textY);
+			textX += 45;
+			CPcontext.fillText("Parent " + selectedBot.components[i].parentID, textX, textY);
+			textX += 45;
+			CPcontext.fillText("StartX " + Math.floor(selectedBot.components[i].originX * 100)/100, textX, textY);
+			textY += 12;
+			CPcontext.fillText("EndX " + Math.floor(selectedBot.components[i].endX * 100)/100, textX, textY);
+			textX += 55;
+			textY -= 12;
+			CPcontext.fillText("StartY " + Math.floor(selectedBot.components[i].originY*100)/100, textX, textY);
+			textY += 12;
+			CPcontext.fillText("EndY " + Math.floor(selectedBot.components[i].endY*100)/100, textX, textY);
+			textY -= 12;
+			textX += 57;
+			CPcontext.fillText("M " + Math.floor(selectedBot.components[i].mass * 100)/100, textX, textY);
+			
+			textX = 50;
 		}
 	}
 	

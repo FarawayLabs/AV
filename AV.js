@@ -37,13 +37,13 @@ function AV(canvas) {
 		
 		// mobile robot density of about 1 robot per 500,000 pixels is suggested, though this will self-adjust quickly if it's too high
 // Population Parameters
-		var mobileRobots = 500;
+		var mobileRobots = 1;
 		var initialPlants = 500000;
-		var plantDensity = 50000;  // The larger the number, the lower the density.  Yeah, I know.
+		var plantDensity = 10000;  // The larger the number, the lower the density.  Yeah, I know.
 		
 // World Parameters		
-		var worldSizeX = 2000;
-		var worldSizeY = 1500;
+		var worldSizeX = 1000;
+		var worldSizeY = 1000;
 		var energyIntensity = 200;	// increase energy harvest by this factor
 		var LatheModifier = .5;	// make lathing less energy intensive by this factor
 	
@@ -64,9 +64,11 @@ function AV(canvas) {
 		
 // Usert Interface Variables
 		var userPause = 0;
+		var userSelectActive = 0;
 
 
-
+		var savelastTime;
+		var savemyRectangle;
 
 		var scrollLock = 0; 	// Which robot should be followed?
 		var scrollRandom = 1; 	// Should the tracking randomly switch occassionally?
@@ -98,17 +100,33 @@ function AV(canvas) {
 		var smallMoveZone = 150;		// distance from edge to allow slow panning
 		var largeMoveZone = 75;			// distance from edge to allow fast panning
 		var mousePosBufferZone = 3;		// distance from edge where no panning occurs.  Should help when the mouse leaves the canvas
-		var smallMove = 5;				// how many pixels to travel for each small move
-		var largeMove = 10;				// how many pixels to travel (in addition) for each large move
+		var smallMove = 2;				// how many pixels to travel for each small move
+		var largeMove = 2;				// how many pixels to travel (in addition) for each large move
 		
 		var mmMouseX = 200;
 		var mmMouseY = 200;
+		var cpMouseX = 0;
+		var cpMouseY = 0;
 		var globalMouseX = 200;
 		var globalMouseY = 200;
 		
 		var timeArray = [];
 		var timeCounter = 0;
 		var fps = 0;
+		
+		var closestIndex;
+		var closestType;
+		
+		// this array holds the positions of every entity
+		var entityArray = [];
+		var entityGridArray = new Array();
+		var GridSize = 100;				// set the spacing of the grid
+		for (var i = 0; i < (Math.floor(worldSizeX / GridSize)); i++ ) {
+			entityGridArray[i] = new Array();
+			for (var j = 0; j < (Math.floor(worldSizeY / GridSize)); j++ ) {
+				entityGridArray[i][j] = new Array();
+			}
+		}
 		
 		// images for robot
 		var roboImageArray = new Array(11);
@@ -139,6 +157,12 @@ function AV(canvas) {
 		roboImageArray[19].src = "blank.png";
 		roboImageArray[20].src = "Multibracket.png";
 		roboImageArray[21].src = "SolarPylon.png";
+		roboImageArray[22].src = "Pylon.png";
+		roboImageArray[23].src = "Crosshair.png";
+		roboImageArray[24].src = "Crosshaired.png";
+		roboImageArray[25].src = "Pause.png";
+		roboImageArray[26].src = "Paused.png";
+		
 	
 		// segregated mobile robot array
 		var Robot = [];
@@ -243,7 +267,8 @@ function AV(canvas) {
 		componentBlueprint[4].volumeRatio100 = .7854;
 		componentBlueprint[4].NanolatheCapability = 1;
 		componentBlueprint[4].imageSource = roboImageArray[18];
-		
+		componentBlueprint[4].HardTopMin = 1;
+		componentBlueprint[4].HardTopMax = 1;
 		
 		componentBlueprint[5].code = "00000005";
 		componentBlueprint[5].compName = "RandomBracket";
@@ -261,6 +286,25 @@ function AV(canvas) {
 		componentBlueprint[5].volumeRatio100 = .1;
 		componentBlueprint[5].imageSource = roboImageArray[20];
 		
+		/*
+		component0Blueprint[6].code = "00000006";
+		componentBlueprint[6].compName = "Branch";
+		componentBlueprint[6].dimX0 = .01;
+		componentBlueprint[6].dimY0 = .01;
+		componentBlueprint[6].dimZ0 = .01;
+		componentBlueprint[6].dimX100 = .5;
+		componentBlueprint[6].dimY100 = .1;
+		componentBlueprint[6].dimZ100 = .1;
+		componentBlueprint[6].code = "00000006";
+		componentBlueprint[6].code = "00000006";
+		componentBlueprint[6].code = "00000006";
+		*/
+		
+		componentBlueprint[6] = componentBlueprint[4];
+		componentBlueprint[6].code = "00000006";
+		componentBlueprint[6].compName = "Branch";
+		componentBlueprint[6].imageSource = roboImageArray[22];
+		componentBlueprint[6].scaleMax = .4;
 		
 	window.requestAnimFrame = (function(callback) {
 	    return window.requestAnimationFrame || 
@@ -322,11 +366,14 @@ function AV(canvas) {
 			
 		    // clear
 		    context.clearRect(0, 0, canvasSizeX, canvasSizeY);
-		    uicontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
+		    //uicontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
 		    
 	
 		    // draw
 		    drawRobos(context);
+		    
+		    savelastTime = lastTime;
+		    savemyRectangle = myRectangle;
 		    // request new frame
 		    requestAnimFrame(function() {
 		      animate(lastTime, myRectangle);
@@ -349,19 +396,48 @@ function AV(canvas) {
 	    			RoboTreeArray[i].robotTreeCharge();
 		    	}
 		    }
+		    
+		    // The trees don't do stuff every time through the loop.  
 		    TreeChanceCounter++;
 		    if (TreeChanceCounter > TreeChance) {
 		    	TreeChanceCounter = 0;
 		    }
-	
+    		
+    		
+    		// Clear the grid array
+    		for (var i = 0; i < (Math.floor(worldSizeX / GridSize)); i++ ) {
+				entityGridArray[i] = new Array();	
+				for (var j = 0; j < (Math.floor(worldSizeY / GridSize)); j++ ) {
+					entityGridArray[i][j] = new Array();
+				}
+			}
+
+		    // Update the grid Array
+		    for (var i = 0; i < (RoboTreeArray.length + Robot.length); i++) {
+		    	var posArray = [];
+		    	if (i < RoboTreeArray.length) {
+		    		posArray.type = "RoboTree";
+		    		posArray.x = RoboTreeArray[i].X;
+		    		posArray.y = RoboTreeArray[i].Y;
+		    		posArray.slot = i;
+		    	} else {
+		    		posArray.type = "Robot";
+		    		posArray.x = Robot[i - RoboTreeArray.length].X;
+		    		posArray.y = Robot[i - RoboTreeArray.length].Y;
+		    		posArray.slot = i - RoboTreeArray.length;
+		    	}
+		    	
+		    	entityGridArray[Math.floor(posArray.x / GridSize)][Math.floor(posArray.y / GridSize)][entityGridArray[Math.floor(posArray.x / GridSize)][Math.floor(posArray.y / GridSize)].length] = posArray;
+		    
+		    }
+			
 		    // Check to see if window should be scrolling
 		    scrollWindow(context, {x: globalMouseX, y: globalMouseY});
 		    
 		    // Update FPS counter
 		    context.fillStyle = "blue";
-			context.font="40px Arial";;
+			context.font="40px Arial";
 		  	context.fillText(fps, 20, 60);
-		  	context.fillText(RoboTreeArray[0].energy, 20, 100);
 		  	
 // Make this its own sub, as in drawRobos
 		  	// Update the Minimap
@@ -401,9 +477,8 @@ function AV(canvas) {
 	
 			}
 			
-			// Clear the UI box
-		    uicontext.fillRect(0, 0, 1000, 1000);
 		}
+		cpClear(uicontext);
 	}
 	
 	window.onload = function() {
@@ -425,10 +500,17 @@ function AV(canvas) {
 		
 		var newmmcanvas = document.getElementById('minMapCanvas');
 	    var newmmcontext = newmmcanvas.getContext('2d');
+	    
+	    var cpcanvas = document.getElementById('UI');
+	    var cpcontext = cpcanvas.getContext('2d');
 	
 	    newcanvas.addEventListener('mousemove', function(evt) {
 	      var mousePos = getMousePos(newcanvas, evt);
-	      var message = "Mouse position: " + mousePos.x + "," + mousePos.y;
+	    }, false);
+	    
+	    newcanvas.addEventListener('mousedown', function(evt) {
+	      var clickmousePos = getMousePos (newcanvas, evt);
+	      mainClick(newcontext, clickmousePos);
 	    }, false);
 	    
 	    newmmcanvas.addEventListener('mousedown', function(evt) {
@@ -439,6 +521,14 @@ function AV(canvas) {
           mmMouseY = mmmousePos.y + 806;
           // alert (mmMouseY);
           minimapClick();
+        }, false);
+        
+        cpcanvas.addEventListener('mousedown', function(evt) {
+        	var cpmousePos = getMousePos(cpcanvas, evt);
+        	//cpMouseX = cpmousePos.x - 164.14999389648438;
+        	cpMouseX = cpmousePos.x - canvasSizeX + 254;
+        	cpMouseY = cpmousePos.y - (mmCanvasSizeY) + 796;
+        	cpClick(cpcontext);
         }, false);
 	};
 	
@@ -540,7 +630,7 @@ function AV(canvas) {
 		this.X = X;
 		this.Y = Y;
 		this.alive = 1;
-		this.energy = 500;
+		this.energy = energy;
 		this.image = [];
 		this.image[0] = roboImageArray[10];
 		this.imagex = [];
@@ -576,6 +666,8 @@ function AV(canvas) {
 		this.robotChangeDestinationRand = changeDestinationRand;
 		this.robotWorldWrap = worldWrap;
 	
+		this.lastHarvest = 0;  									// Tracks the last energy harvest
+		this.growDelayCounter = 10000;								// Used to delay the growth of new components
 	}
 	
 	/*   Component Type List (codes)
@@ -747,7 +839,7 @@ function AV(canvas) {
 	}
 	
 	function treeBuilder () {
-		var newTree = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 100);
+		var newTree = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 50000);
 		// Make some roots
 		
 		newTree.components[0] = new roboComponent(0, 1.0, 10,.05, 50, 50, 50, 50, -1, 0, 1, roboImageArray[19], 0);
@@ -832,6 +924,7 @@ function AV(canvas) {
 	function treeCharge () {
 	// absorb solar energy
 		// Loop through components and find the solar panels and get energy for each
+		this.lastHarvest = 0;
 		var solarPanels = 0;
 		for (var i = 0; i < this.components.length; i++) {
 			if (this.components[i].code == "00000003") {
@@ -840,13 +933,15 @@ function AV(canvas) {
 				var energyHarvest = this.components[i].dimX * this.components[i].dimY * energyIntensity;
 				//alert ("energy harvest:" + i + " " + energyHarvest);
 				this.energy += energyHarvest * TreeChance;
+				this.lastHarvest += energyHarvest;
 			}	
 		}
 		
-		//if (solarPanels > 2) { alert ("we have more than two"); }
+		
 	// use energy to live
 	
-		this.energy -= this.mass;
+		this.energy -= (this.mass * TreeChance);
+		this.energy -= (this.components.length * TreeChance);
 		
 	// absorb Metals
 		//this.inventoryMetalTitanium += 1;
@@ -877,31 +972,115 @@ function AV(canvas) {
 
 	// start growing new components
 	
-	if (this.energy > 1000) {
-		//alert ("Component added!");
-		if (treeAddComponent( this, 3, 1.0, 3, .05, 50, 50, 50, 50, 2, -1, 1, roboImageArray[21], 0)) {
-			//alert ("added");
-			this.energy -= 900;
+		if (this.lastHarvest > (this.mass + this.components.length)) {
+			if (this.growDelayCounter > 1000) {
+			// It is time to grow a new component		
+	
+			// Find a blank hard point
+				// Create a blank array for holding possible destinations
+
+				var possibleDestinations = [];
+				for (var i = 0; i < this.components.length; i++) {
+					if (this.components[i].NumberOfChildren < this.components[i].HardTopChildren.length) {
+						for (var j = 0; j < this.components[i].HardTopChildren.length; j++) {
+							if (this.components[i].HardTopChildren[j] < 0) {
+								// store the component index
+								possibleDestinations[possibleDestinations.length] = i;
+								// store the HardTopindex
+								possibleDestinations[possibleDestinations.length] = j;		
+							}
+						}
+					}
+				}
+
+				if (possibleDestinations.length >= 0) {
+					// Pick a random 
+					var componentDi = Math.floor(Math.random()*(possibleDestinations.length / 2));
+					var destinationComponent = possibleDestinations[2 * componentDi];
+					var destinationHardPoint = possibleDestinations[2 * componentDi + 1];
+					
+			/*		
+					for (var i = 0; i < possibleDestinations.length; i++ ) {
+						alert ("possibleDestination Array: " + possibleDestinations[i]);
+					}
+					
+					
+					alert ("length: " + possibleDestinations.length + " componentDi: " + componentDi);
+					
+					alert ("destinationComponent: " + destinationComponent);
+					alert ("destinationHardPoint: " + destinationHardPoint);
+			*/	
+				// Select randomly the type of component to create;
+				
+					//if (Math.random() * 10 == 2) { alert (this.growDelayCounter); }
+					var ComponentType = 0;
+					ComponentType = Math.floor(Math.random() * 3);
+					if (ComponentType == 0) {
+						// Make a solar panel
+						ComponentType = 3;
+					} else if (ComponentType == 1 ){
+						// Make a stick
+						//ComponentType = 6;
+						ComponentType = 3;
+					} else {
+						// Make a seedpod;
+						ComponentType = 3;
+					}
+				
+					if (this.components[destinationComponent].code == "00000004") {
+						// If the parent component is a stick or trunk, make a bracket
+						ComponentType = 5;
+					} else if (this.components[destinationComponent].code == "00000007") {
+						// If the parent component is a seedpod, make a grape
+						ComponentType = 8;	
+					}
+				
+					if (ComponentType == 8) { //ComponentType = 3; 
+						}
+					
+					
+					
+					
+					
+					
+					
+					//alert ("Creating a component of type " + ComponentType + " on HardTop Index " + destinationHardPoint + " on a parent that is component number " + destinationComponent + " hardTopSpecify: " + this.components[destinationComponent].HardTopSpecify);
+					
+					
+					
+					
+					
+					
+			// If the parent component only has one remaining slot, make it a stick
+			// Create the component
+					// if (treeAddComponent( this, ComponentType, 1.0, 3, .05, 50, 50, 50, 50, destinationComponent, destinationHardPoint, 1, roboImageArray[21], 0)) {
+					if (treeAddComponent( this, 3 , 1.0, 3, .05, 50, 50, 50, 50, 2, 3, 1, roboImageArray[21], 0)) {	
+						//alert ("added");
+						//if (Math.random() * 999 == 200) { alert (this.energy); }
+						this.energy = this.energy - 900;
+						this.growDelayCounter = 0;
+					}
+				}
+			}	
+			//alert ("abort");
 		}
-		//alert ("abort");
-	}
+
+	// Increment the grow delay
+		this.growDelayCounter += TreeChance;
 
 
-	//if (Math.floor(Math.random() * 10000) == 500) { alert (this.energy + " length: " + this.components.length + " mass: " + this.mass); }
-	if (this.energy > 1000) { 
-		//alert ("over1000!");
-	}
+
 	// repair components
 	// (maybe seed growing is repair?  Nah.)
 	
-	
-	
-	for (var i = 0; i < this.components.length; i++) {
-		var oldMass = 0;
-		var newMass = 0;
-		//var NanoLathe = this.components.
-	}
-	
+		
+		
+		for (var i = 0; i < this.components.length; i++) {
+			var oldMass = 0;
+			var newMass = 0;
+			//var NanoLathe = this.components.
+		}
+		
 	
 	
 	// Calculate nanolathe capability
@@ -1402,4 +1581,140 @@ function AV(canvas) {
 		mmRatioY = 250 / worldSizeY;
 		
 	}
+	
+	// Clear the control panel
+	function cpClear(cpcontext) {
+		cpcontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
+		cpRedraw(cpcontext);
+		DisplayRoboInfo();
+	}
+	
+	
+	// Draw the control panel
+	function cpRedraw (cpcontext) {
+		// Draw the buttons
+		if (userPause == 0 ) {
+			cpcontext.drawImage(roboImageArray[25], 10, 10);	
+		} else {
+			cpcontext.drawImage(roboImageArray[26], 10, 10);
+		}
+		
+		if (userSelectActive == 0) {
+			cpcontext.drawImage(roboImageArray[23], 10, 50);			
+		} else {
+			cpcontext.drawImage(roboImageArray[24], 10, 50);
+		}
+
+	}
+	
+	
+	// This function is invoked when the control panel canvas is clicked.
+	function cpClick(cpcontext) {
+		// Clear the UI canvas
+		cpClear(cpcontext);
+		
+		
+		// Check to see if one of the buttons was pressed
+		  // Check buttons
+		if ((cpMouseX >= 11) && (cpMouseX <= 39)) {
+			// Check Pause
+			if ((cpMouseY >= 11) && (cpMouseY <= 39)) {
+				if (userPause == 0) {
+					userPause = 1;
+					cpcontext.drawImage(roboImageArray[26], 10, 10);
+				} else {
+					// reset pause indicator
+					userPause = 0;
+					userSelectActive = 0;
+					// redraw control panel
+					cpClear(cpcontext);
+					
+					// call animation frames
+					requestAnimFrame(function() {
+		 		    	animate(savelastTime, savemyRectangle);
+		    		});
+				}
+			}
+			
+			// Check Selector
+			if ((cpMouseY >= 51)  && (cpMouseY <=79)) {
+				//alert ("Selector pressed");
+				userSelectActive = 1;	
+				userPause = 1;
+				cpcontext.drawImage(roboImageArray[25], 10, 10);
+			}
+		}
+			
+			
+			
+	}
+	
+	function DisplayRoboInfo () {
+		var cpcanvas = document.getElementById('UI');
+	    var CPcontext = cpcanvas.getContext('2d');
+	
+		if (closestType == "Robot") {
+			CPRoboInfoWriter(Robot[closestIndex], CPcontext);
+		} else if (closestType == "RoboTree") {
+			CPRoboInfoWriter(RoboTreeArray[closestIndex], CPcontext);
+			//CPcontext.fillText("Robot Energy: " + Math.floor(RoboTreeArray[closestIndex].energy * 10)/10, textX, textY);
+		}
+		
+	}
+	
+	function CPRoboInfoWriter(selectedBot, CPcontext) {
+		var textX = 50;
+		var textY = 10;
+		CPcontext.font = "10px Arial";
+		CPcontext.fillText("Robot Energy: " + Math.floor(selectedBot.energy * 10)/10, textX, textY);
+		for (var i = 0; i < selectedBot.components.length; i++) {
+			textY += 15;
+			CPcontext.fillText("Robot Component" + i +  ": " + selectedBot.components[i].compName, textX, textY);
+		}
+	}
+	
+	function mainClick(newcontext, mousePos) {
+		var clickX = mousePos.x + canvasOriginX;
+		var clickY = mousePos.y + canvasOriginY;
+		// alert ("X: " + clickX);	
+		// alert ("Y: " + clickY);
+		
+		
+		// Create an array to store the targets
+		var targetArray = [];
+		// Figure out which grid we're in
+		var gridX = Math.floor(clickX / GridSize);
+		var gridY = Math.floor(clickY / GridSize);
+		
+		// Find center of grid, and find out if we're near the edge of the grid.
+		// Check left
+		
+		
+		// Check right
+		
+		// Check top
+		
+		// check bottom
+				
+		// Loop through appropriate grid to find a list of entities in each grid and record the distance for each
+		var thisdistance = 0;
+		var closest = 1000;
+		closestIndex = .1;
+		closestType = "R";
+		for (var i = 0; i < entityGridArray[gridX][gridY].length; i++) {
+			thisdistance = Math.sqrt(Math.pow((entityGridArray[gridX][gridY][i].x - clickX),2) + Math.pow((entityGridArray[gridX][gridY][i].y - clickY),2));
+			if (thisdistance <= closest) {
+				closest = thisdistance;
+				closestType = entityGridArray[gridX][gridY][i].type;
+				closestIndex = entityGridArray[gridX][gridY][i].slot;
+			}			
+		} 
+		
+	}
+	
+	function gridSearch(newcontext, mousePos, GridX, GridY) {
+		
+		return { rtype: roboType, rindex: roboIndex };
+	}
+	
 }

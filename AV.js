@@ -34,17 +34,19 @@
 
 function AV(canvas) {
 		// Initialize Variables
+
+		var worldSizeX = 2000;
+		var worldSizeY = 2000;
 		
 		// mobile robot density of about 1 robot per 500,000 pixels is suggested, though this will self-adjust quickly if it's too high
 // Population Parameters
 		var mobileRobots = 1;
 		var initialPlants = 500000;
-		var plantDensity = 20000;  // The larger the number, the lower the density.  Yeah, I know.
+		var plantDensity = 10000;  // The larger the number, the lower the density.  Yeah, I know.
 		
 // World Parameters		
-		var worldSizeX = 1000;
-		var worldSizeY = 1000;
-		var energyIntensity = 200;	// increase energy harvest by this factor
+
+		var energyIntensity = 25;	// increase energy harvest by this factor
 		var LatheModifier = .5;	// make lathing less energy intensive by this factor
 	
 		var frameNum = 0;
@@ -52,7 +54,7 @@ function AV(canvas) {
 		var scrollTransparency = .3;
 		
 		
-		var TreeChance = 3;		
+		var TreeChance = 10;		
 		var TreeChanceCounter = 0;
 		initialPlants = (worldSizeX * worldSizeY / plantDensity);
 		
@@ -178,12 +180,12 @@ function AV(canvas) {
 			componentBlueprint[test] = {
 				"code": "00000000",
 				"compName": "null",
-				"dimX0": 0,
-				"dimY0": 0,
-				"dimZ0": 0,
-				"dimX100": 0,
-				"dimY100": 0,
-				"dimZ100": 0,
+				"dimX100": 1,
+				"dimY100": 1,
+				"dimZ100": 1,
+				"dimXScaleMax": 1,
+				"dimYScaleMax": 1,
+				"dimZScaleMax": 1,
 				"angleX": 0,
 				"angleY": 0,
 				"angleZ": 0,
@@ -203,6 +205,7 @@ function AV(canvas) {
 				"HardTopMin": 0,
 				"HardTopMax": 0,
 				"HardTopSpecify": -1,
+				"HardTopMature": 0,
 				"HardTopActivate": 1,
 				"HardTopJitter": 0,
 				"HardRadialMin": 0,
@@ -212,22 +215,22 @@ function AV(canvas) {
 				"HardRadialJitter": 0,
 				"Complexity": 1,
 				"NanolatheCapability": 0,
-				"scaleMax": 1
+				"scaleMax": 1,
+				"isRadial": 0,
+				"continuesParentAngle": 0
 			}
 		}
 		
 		
 		componentBlueprint[0].code = "00000000";
 		componentBlueprint[0].compName = "Root Structure";
-		componentBlueprint[0].dimX0 = .03;
-		componentBlueprint[0].dimY0 = .03;
-		componentBlueprint[0].dimZ0 = .02; 
 		componentBlueprint[0].dimX100 = 3;
 		componentBlueprint[0].dimY100 = 3;
 		componentBlueprint[0].dimZ100 = -2;
 		componentBlueprint[0].volumeRatio0 = .01;
 		componentBlueprint[0].volumeRatio100 = .01;
 		componentBlueprint[0].imageSource = roboImageArray[19];
+		componentBlueprint[0].isRadial = 1;
 		
 		 
 		componentBlueprint[1].code = "00000001";
@@ -241,22 +244,16 @@ function AV(canvas) {
 		
 		componentBlueprint[3].code = "00000003";
 		componentBlueprint[3].compName = "SolarPanel";
-		componentBlueprint[3].dimX0 = .005;
-		componentBlueprint[3].dimY0 = .005;
-		componentBlueprint[3].dimZ0 = .1;
-		componentBlueprint[3].dimX100 = 2;
-		componentBlueprint[3].dimY100 = 2;
-		componentBlueprint[3].dimZ100 = .1;
+		componentBlueprint[3].dimX100 = 1;
+		componentBlueprint[3].dimY100 = 1;
+		componentBlueprint[3].dimZ100 = .05;
 		componentBlueprint[3].volumeRatio0 = .6666;
 		componentBlueprint[3].volumeRatio100 = .6666;
 		componentBlueprint[3].imageSource = roboImageArray[21];
-		componentBlueprint[3].scaleMax = .5;
+		componentBlueprint[3].scaleMax = 1;
 				
 		componentBlueprint[4].code = "00000004";
 		componentBlueprint[4].compName = "TrunkStick";
-		componentBlueprint[4].dimX0 = .01;
-		componentBlueprint[4].dimY0 = .01;
-		componentBlueprint[4].dimZ0 = .1;
 		componentBlueprint[4].dimX100 = 1;
 		componentBlueprint[4].dimY100 = 1;
 		componentBlueprint[4].dimZ100 = 10;
@@ -269,12 +266,10 @@ function AV(canvas) {
 		componentBlueprint[4].imageSource = roboImageArray[18];
 		componentBlueprint[4].HardTopMin = 1;
 		componentBlueprint[4].HardTopMax = 1;
+		componentBlueprint[4].isRadial = 1;
 		
 		componentBlueprint[5].code = "00000005";
 		componentBlueprint[5].compName = "RandomBracket";
-		componentBlueprint[5].dimX0 = .001;
-		componentBlueprint[5].dimY0 = .001;
-		componentBlueprint[5].dimZ0 = .001;
 		componentBlueprint[5].dimX100 = 1;
 		componentBlueprint[5].dimY100 = 1;
 		componentBlueprint[5].dimZ100 = 1;
@@ -285,32 +280,18 @@ function AV(canvas) {
 		componentBlueprint[5].volumeRatio0 = .1;
 		componentBlueprint[5].volumeRatio100 = .1;
 		componentBlueprint[5].imageSource = roboImageArray[20];
-		
-		/*
-		component0Blueprint[6].code = "00000006";
-		componentBlueprint[6].compName = "Branch";
-		componentBlueprint[6].dimX0 = .01;
-		componentBlueprint[6].dimY0 = .01;
-		componentBlueprint[6].dimZ0 = .01;
-		componentBlueprint[6].dimX100 = .5;
-		componentBlueprint[6].dimY100 = .1;
-		componentBlueprint[6].dimZ100 = .1;
-		componentBlueprint[6].code = "00000006";
-		componentBlueprint[6].code = "00000006";
-		componentBlueprint[6].code = "00000006";
-		*/
-		
+		componentBlueprint[5].isRadial = 1;
 		
 		componentBlueprint[6].code = "00000006";
 		componentBlueprint[6].compName = "Branch";
 		componentBlueprint[6].imageSource = roboImageArray[22];
-		componentBlueprint[6].scaleMax = .4;
-		componentBlueprint[6].dimX0 = .1;
-		componentBlueprint[6].dimY0 = .01;
-		componentBlueprint[6].dimZ0 = .01;
-		componentBlueprint[6].dimX100 = 10;
-		componentBlueprint[6].dimY100 = 1;
-		componentBlueprint[6].dimZ100 = 1;
+		componentBlueprint[6].scaleMax = 1;
+		componentBlueprint[6].dimX100 = 4;
+		componentBlueprint[6].dimY100 = .004;
+		componentBlueprint[6].dimZ100 = .004;
+		componentBlueprint[6].dimXScaleMax = 1;
+		componentBlueprint[6].dimYScaleMax = 200;
+		componentBlueprint[6].dimZScaleMax = 200;
 		componentBlueprint[6].angleZjitter = 10;
 		componentBlueprint[6].yawZ = 20;
 		componentBlueprint[6].yawZjitter = 10;
@@ -319,6 +300,21 @@ function AV(canvas) {
 		componentBlueprint[6].NanolatheCapability = 1;
 		componentBlueprint[6].HardTopMin = 1;
 		componentBlueprint[6].HardTopMax = 1;
+		
+		componentBlueprint[7].code = "00000007";
+		componentBlueprint[7].compName = "ForkedBracket";
+		componentBlueprint[7].dimX100 = 1;
+		componentBlueprint[7].dimY100 = 1;
+		componentBlueprint[7].dimZ100 = 1;
+		componentBlueprint[7].imageSource = 19;
+		componentBlueprint[7].HardTopMin = 2;
+		componentBlueprint[7].HardTopMax = 4;
+		componentBlueprint[7].HardTopJitter = 15;
+		componentBlueprint[7].volumeRatio0 = .1;
+		componentBlueprint[7].volumeRatio100 = .1;
+		componentBlueprint[7].imageSource = roboImageArray[20];
+		componentBlueprint[7].isRadial = 1;
+		componentBlueprint[7].continuesParentAngle = 1;
 
 		
 	window.requestAnimFrame = (function(callback) {
@@ -605,7 +601,7 @@ function AV(canvas) {
 						if (RoboTreeArray[k3].Y < (canvasOriginY + 20 + canvasSizeY)){
 							for (var treeparts = 0; treeparts < RoboTreeArray[k3].components.length; treeparts++) {
 								//alert (RoboTreeArray[k3].components[treeparts].imageSource);
-								var CompScale = (RoboTreeArray[k3].components[treeparts].dimX / RoboTreeArray[k3].components[treeparts].dimX100); 
+								var CompScale = (RoboTreeArray[k3].components[treeparts].dimX / RoboTreeArray[k3].components[treeparts].dimX100)*.4; 
 								//alert (CompScale);
 								
 								
@@ -641,7 +637,8 @@ function AV(canvas) {
 	}
 	
 	// Definition of the robot object
-	function robot(X, Y, alive, energy) {
+	function robot(X, Y, alive, energy, roboNumber) {
+		this.roboID = roboNumber;
 		this.X = X;
 		this.Y = Y;
 		this.alive = 1;
@@ -704,9 +701,9 @@ function AV(canvas) {
 		// Populate component parameters from the blueprint
 		this.code = componentBlueprint[blueprintID].code;
 		this.compName = componentBlueprint[blueprintID].compName;
-		this.dimX0 = componentBlueprint[blueprintID].dimX0;
-		this.dimY0 = componentBlueprint[blueprintID].dimY0;
-		this.dimZ0 = componentBlueprint[blueprintID].dimZ0;
+		this.dimXScaleMax = componentBlueprint[blueprintID].dimXScaleMax;
+		this.dimYScaleMax = componentBlueprint[blueprintID].dimYScaleMax;
+		this.dimZScaleMax = componentBlueprint[blueprintID].dimZScaleMax;
 		this.dimX100 = componentBlueprint[blueprintID].dimX100;
 		this.dimY100 = componentBlueprint[blueprintID].dimY100;
 		this.dimZ100 = componentBlueprint[blueprintID].dimZ100;
@@ -734,16 +731,19 @@ function AV(canvas) {
 		this.HardTopMin = componentBlueprint[blueprintID].HardTopMin;
 		this.HardTopMax = componentBlueprint[blueprintID].HardTopMax;
 		this.HardTopSpecify = componentBlueprint[blueprintID].HardTopSpecify;
+		this.HardTopMature = 0;
 		this.HardTopActivate = componentBlueprint[blueprintID].HardTopActivate;
 		this.HardTopJitter = componentBlueprint[blueprintID].HardTopJitter;
+		this.isRadial = componentBlueprint[blueprintID].isRadial;	
+
 
 		this.Complexity = componentBlueprint[blueprintID].Complexity;
 		this.NanolatheCapability = componentBlueprint[blueprintID].NanolatheCapability;
 		this.scaleMax = componentBlueprint[blueprintID].scaleMax;
 
-		this.dimX = this.dimX0;
-		this.dimY = this.dimY0;
-		this.dimZ = this.dimZ0;
+		this.dimX = 0;
+		this.dimY = 0;
+		this.dimZ = 0;
 		
 		// The location of the start of the component
 		this.originX = 0;
@@ -866,8 +866,8 @@ function AV(canvas) {
 		return success;
 	}
 	
-	function treeBuilder () {
-		var newTree = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 50000);
+	function treeBuilder (treeNumber) {
+		var newTree = new robot(Math.random()*worldSizeX, Math.random()*worldSizeY, 1, 50000, treeNumber);
 		// Make some roots
 		
 		newTree.components[0] = new roboComponent(0, 1.0, 10,.05, 50, 50, 50, 50, -1, 0, 1, roboImageArray[19], 0);
@@ -1000,107 +1000,121 @@ function AV(canvas) {
 
 	// start growing new components
 	
+		var AddAComponent = 0;
+	
 		if (this.lastHarvest > (this.mass + this.components.length)) {
-			if (this.growDelayCounter > 10) {
+			if (this.growDelayCounter > 100) {
+				
 			// It is time to grow a new component		
 	
 			// Find a blank hard point
 				// Create a blank array for holding possible destinations
-
-				var possibleDestinations = [];
-				for (var i = 0; i < this.components.length; i++) {
-					if (this.components[i].NumberOfChildren < this.components[i].HardTopChildren.length) {
-						for (var j = 0; j < this.components[i].HardTopChildren.length; j++) {
-							if (this.components[i].HardTopChildren[j] < 0) {
-								// store the component index
-								possibleDestinations[possibleDestinations.length] = i;
-								// store the HardTopindex
-								possibleDestinations[possibleDestinations.length] = j;		
+							
+					var possibleDestinations = [];
+					for (var i = 0; i < this.components.length; i++) {
+						if (this.components[i].HardTopMature == 1) {
+							if (this.components[i].NumberOfChildren < this.components[i].HardTopChildren.length) {
+								for (var j = 0; j < this.components[i].HardTopChildren.length; j++) {
+									if (this.components[i].HardTopChildren[j] < 0) {
+										AddAComponent = 1;	
+										// store the component index
+										possibleDestinations[possibleDestinations.length] = i;
+										// store the HardTopindex
+										possibleDestinations[possibleDestinations.length] = j;
+									}		
+								}
 							}
 						}
 					}
-				}
+				if (AddAComponent == 1) {
 
-				if (possibleDestinations.length >= 0) {
-					// Pick a random 
-					var componentDi = Math.floor(Math.random()*(possibleDestinations.length / 2));  // roll a di
-					var destinationComponent = possibleDestinations[2 * componentDi];				// save the destination component index
-					var destinationHardPoint = possibleDestinations[2 * componentDi + 1];			// save the hard point id
+					if (possibleDestinations.length >= 0) {
+						// Pick a random 
+						var componentDi = Math.floor(Math.random()*(possibleDestinations.length / 2));  // roll a di
+						var destinationComponent = possibleDestinations[2 * componentDi];				// save the destination component index
+						var destinationHardPoint = possibleDestinations[2 * componentDi + 1];			// save the hard point id
+						
+				/*		
+						for (var i = 0; i < possibleDestinations.length; i++ ) {
+							alert ("possibleDestination Array: " + possibleDestinations[i]);
+						}
+						
+						
+						alert ("length: " + possibleDestinations.length + " componentDi: " + componentDi);
+						
+						alert ("destinationComponent: " + destinationComponent);
+						alert ("destinationHardPoint: " + destinationHardPoint);
+				*/	
+					// Select randomly the type of component to create;
 					
-			/*		
-					for (var i = 0; i < possibleDestinations.length; i++ ) {
-						alert ("possibleDestination Array: " + possibleDestinations[i]);
-					}
-					
-					
-					alert ("length: " + possibleDestinations.length + " componentDi: " + componentDi);
-					
-					alert ("destinationComponent: " + destinationComponent);
-					alert ("destinationHardPoint: " + destinationHardPoint);
-			*/	
-				// Select randomly the type of component to create;
-				
-					//if (Math.random() * 10 == 2) { alert (this.growDelayCounter); }
-					var ComponentType = 0;
-					ComponentType = Math.floor(Math.random() * 3);
-					if (ComponentType == 0) {
-						// Make a solar panel
-						ComponentType = 3;
-					} else if (ComponentType == 1 ){
-						// Make a stick
-						ComponentType = 6;
-						//ComponentType = 3;
-					} else {
-						// Make a seedpod;
-						ComponentType = 3;
-					}
-				
-					if (this.components[destinationComponent].code == "00000004") {
-						// If the parent component is a stick or trunk, make a bracket
-						ComponentType = 5;
-					} else if (this.components[destinationComponent].code == "00000007") {
-						// If the parent component is a seedpod, make a grape
-						ComponentType = 8;	
-					}
-				
-					if (ComponentType == 8) { //ComponentType = 3; 
+						//if (Math.random() * 10 == 2) { alert (this.growDelayCounter); }
+						var ComponentType = 0;
+						ComponentType = Math.floor(Math.random() * 3);
+						if (ComponentType == 0) {
+							// Make a solar panel
+							ComponentType = 3;
+						} else if (ComponentType == 1 ){
+							// Make a stick
+							ComponentType = 6;
+							//ComponentType = 3;
+						} else {
+							// Make a seedpod;
+							ComponentType = 3;
 						}
 					
-					// if parent is 4 or 6, make a multibracket
+						if (this.components[destinationComponent].code == "00000004") {
+							// If the parent component is a stick or trunk, make a bracket
+							ComponentType = 5;
+						} else if (this.components[destinationComponent].code == "00000007") {
+							// If the parent component is a seedpod, make a grape
+							ComponentType = 8;	
+						}
 					
-					
-					if ((this.components[destinationComponent].code == "00000004") ||(this.components[destinationComponent].code == "00000006")) {
-						ComponentType = 5;
-					}
-					
-					if (this.components.length > 30) {
-						ComponentType = 3;
-					}
-					
-					//alert ("Creating a component of type " + ComponentType + " on HardTop Index " + destinationHardPoint + " on a parent that is component number " + destinationComponent + " hardTopSpecify: " + this.components[destinationComponent].HardTopSpecify);
-					
-					
-					
-					
-					
-					
-			// If the parent component only has one remaining slot, make it a stick
-			// Create the component
-					if (treeAddComponent( this, ComponentType, 1.0, 3, .05, 50, 50, 50, 50, destinationComponent, destinationHardPoint, 1, roboImageArray[21], 0)) {
-					//if (treeAddComponent( this, 3 , 1.0, 3, .05, 50, 50, 50, 50, 2, 3, 1, roboImageArray[21], 0)) {	
-						//alert ("added");
-						//if (Math.random() * 999 == 200) { alert (this.energy); }
-						this.energy = this.energy - 900;
-						this.growDelayCounter = 0;
+						if (ComponentType == 8) { ComponentType = 3; 
+							}
+						
+						// if parent is 4 or 6, make a multibracket
+						
+						
+						if ((this.components[destinationComponent].code == "00000004") ||(this.components[destinationComponent].code == "00000006")) {
+							ComponentType = 5;
+						}
+						
+						if (this.components.length > 3000) {
+							ComponentType = 3;
+						}
+						
+						//alert ("Creating a component of type " + ComponentType + " on HardTop Index " + destinationHardPoint + " on a parent that is component number " + destinationComponent + " hardTopSpecify: " + this.components[destinationComponent].HardTopSpecify);
+						
+						
+						
+						
+						
+						
+				// If the parent component only has one remaining slot, make it a stick
+				// Create the component
+						if (treeAddComponent( this, ComponentType, 1.0, 3, .05, 50, 50, 50, 50, destinationComponent, destinationHardPoint, 1, roboImageArray[21], 0)) {
+						//if (treeAddComponent( this, 3 , 1.0, 3, .05, 50, 50, 50, 50, 2, 3, 1, roboImageArray[21], 0)) {	
+							//alert ("added");
+							//if (Math.random() * 999 == 200) { alert (this.energy); }
+							this.energy = this.energy - 900;
+							this.growDelayCounter = 0;
+						}
 					}
 				}
 			}	
-			//alert ("abort");
 		}
-
+		
 	// Increment the grow delay
 		this.growDelayCounter += TreeChance;
-
+	
+/*
+var cpcanvas = document.getElementById('UI');
+var CPcontext = cpcanvas.getContext('2d');
+CPcontext.clearRect(0, 0, uiCanvasSizeX, uiCanvasSizeY);
+CPcontext.font = "90px Arial";
+CPcontext.fillText(this.components[i].HardTopMature, 100, 100);
+*/
 
 
 	// repair components
@@ -1157,7 +1171,6 @@ function AV(canvas) {
 			//if ((this.components[i].dimX < this.components[i].dimX100) && (LatheEnergyRemaining > 0)) {
 			if ((LatheEnergyRemaining > 0) && ((this.components[i].dimX / this.components[i].dimX100) < this.components[i].scaleMax)) {
 				// Nanolathe it
-				//alert ("Nanolathing");
 				
 				// Calculate lathe energy available for this lathing
 				var EnergyForThisLathe = OriginalLatheEnergy / 3;
@@ -1170,7 +1183,7 @@ function AV(canvas) {
 				var addedMass = ((LatheModifier)*(EnergyForThisLathe) / (this.components[i].averageMelt * this.components[i].Complexity));
 				// Check to make sure the component is growing by less than 10% 
 				var addedMassLimit = this.components[i].mass * .01 * TreeChance;
-				if (addedMassLimit < .00001) { addedMassLimit = .00001; }
+				if (addedMassLimit < .000001) { addedMassLimit = .000001; }
 				
 				// set mass to be added to the lesser of the two
 				if (addedMass > addedMassLimit) { 
@@ -1180,15 +1193,15 @@ function AV(canvas) {
 				// alert ("Component: " + i + " current mass: " + this.components[i].mass + " addedMass: " + addedMass);
 				
 				var newTotalMass = oldMass + addedMass;
-				
+				var finalMass = this.components[i].dimX100 * this.components[i].dimY100 * this.components[i].dimZ100 * this.components[i].averageDensity * this.components[i].currentVolumeRatio
 // Check to make sure supporting components can handle additional mass 
 				
 				
 				// Calc new dimensions based on new mass
-				this.components[i].dimY = Math.pow(((newTotalMass * Math.pow(this.components[i].dimY0,2))/(this.components[i].dimX0 * this.components[i].dimZ0 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
-				this.components[i].dimZ = Math.pow(((newTotalMass * Math.pow(this.components[i].dimZ0,2))/(this.components[i].dimX0 * this.components[i].dimY0 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
-				this.components[i].dimX = Math.pow(((newTotalMass * Math.pow(this.components[i].dimX0,2))/(this.components[i].dimY0 * this.components[i].dimZ0 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
-				//alert (this.components[i].dimY);
+				this.components[i].dimY = Math.pow(((newTotalMass * Math.pow(this.components[i].dimY100,2))/(this.components[i].dimX100 * this.components[i].dimZ100 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
+				this.components[i].dimZ = Math.pow(((newTotalMass * Math.pow(this.components[i].dimZ100,2))/(this.components[i].dimX100 * this.components[i].dimY100 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
+				this.components[i].dimX = Math.pow(((newTotalMass * Math.pow(this.components[i].dimX100,2))/(this.components[i].dimY100 * this.components[i].dimZ100 * this.components[i].averageDensity * this.components[i].currentVolumeRatio)), (1/3));
+			
 				
 				//Update the component's mass
 				this.components[i].mass = this.components[i].dimX * this.components[i].dimY * this.components[i].dimZ * this.components[i].averageDensity * this.components[i].currentVolumeRatio;
@@ -1196,17 +1209,27 @@ function AV(canvas) {
 				//Update the entity's energy
 				LatheEnergyRemaining -= EnergyForThisLathe;
 				this.energy -= EnergyForThisLathe;
-				
-				//alert ("Old mass: " + oldMass + " Added Mass: " + addedMass + " calc'd mass: " + this.components[i].mass);
-				//alert ("Old energy: " + this.energy + " Used Energy: " + (this.components[i].Complexity * this.components[i].averageMelt * addedMass));
-				
+							
 				// Update the total mass of the entity
 				this.mass += addedMass;				
-			}	
+				
+				
+				// Check the component to see if it is mature enough to have hard points
+				
+				if (this.components[i].dimX > this.components[i].dimX100) {
+					if (this.components[i].dimY > this.components[i].dimY100) {
+						if (this.components[i].dimZ > this.components[i].dimZ100) {
+							this.components[i].HardTopMature = 1;
+							//alert (this.roboID + "'s " + i + "th component is mature");
+						}
+					}
+				} 	
+				
+			}
 		}
 
 			
-		
+			//alert (this.roboID + " growed");
 	
 	
 	// if there are any new hard points, populate them using preferred method (at this point, )
@@ -1274,10 +1297,14 @@ function AV(canvas) {
 				this.components[i].originZ = this.components[this.components[i].parentID].endZ;
 				
 			}
-			// update this component's end coordinates
-			this.components[i].endX = this.components[i].originX + (this.components[i].dimX * Math.cos((this.components[i].angleZ) * Math.PI/180) * 5);
-			this.components[i].endY = this.components[i].originY - (this.components[i].dimX * Math.sin((this.components[i].angleZ) * Math.PI/180) * 5);
-			//alert (this.components[i].angleZ); 	
+			if (this.components[i].isRadial == 0) {
+				// update this component's end coordinates
+				this.components[i].endX = this.components[i].originX + (this.components[i].dimX * Math.cos((this.components[i].angleZ) * Math.PI/180) * 5);
+				this.components[i].endY = this.components[i].originY - (this.components[i].dimX * Math.sin((this.components[i].angleZ) * Math.PI/180) * 5);
+			} else {
+				this.components[i].endX = this.components[i].originX;
+				this.components[i].endY = this.components[i].originY;
+			}
 		}
 		//alert (Math.cos());
 	}
@@ -1615,14 +1642,14 @@ function AV(canvas) {
 				RoboTreeArray[i2].imagey[itree] = Math.floor(Math.random() * 30) - 15;
 			}
 			*/
-			RoboTreeArray[i2] = treeBuilder();
+			RoboTreeArray[i2] = treeBuilder(i2);
 			
 		}
 
 
 		// Create the mobile Robots
 		for (var irobot2 = 0; irobot2 < mobileRobots; irobot2++) {
-			Robot[irobot2] = new robot(200,50,1,100);
+			Robot[irobot2] = new robot(200,50,1,100,irobot2);
 			Robot[irobot2].image[0] = roboImageArray[10];
 		}
 
@@ -1744,17 +1771,20 @@ function AV(canvas) {
 			textX += 45;
 			CPcontext.fillText("Parent " + selectedBot.components[i].parentID, textX, textY);
 			textX += 45;
-			CPcontext.fillText("StartX " + Math.floor(selectedBot.components[i].originX * 100)/100, textX, textY);
+			CPcontext.fillText("DimX " + selectedBot.components[i].dimX, textX, textY);
 			textY += 12;
-			CPcontext.fillText("EndX " + Math.floor(selectedBot.components[i].endX * 100)/100, textX, textY);
-			textX += 55;
+			CPcontext.fillText("DimX100 " + selectedBot.components[i].dimX100, textX, textY);
+			textX += 65;
 			textY -= 12;
 			CPcontext.fillText("StartY " + Math.floor(selectedBot.components[i].originY*100)/100, textX, textY);
 			textY += 12;
 			CPcontext.fillText("EndY " + Math.floor(selectedBot.components[i].endY*100)/100, textX, textY);
 			textY -= 12;
 			textX += 57;
-			CPcontext.fillText("M " + Math.floor(selectedBot.components[i].mass * 100)/100, textX, textY);
+			//CPcontext.fillText("M " + Math.floor(selectedBot.components[i].mass * 100)/100, textX, textY);
+			CPcontext.fillText("M " + selectedBot.components[i].HardTopMature , textX, textY);
+			
+			
 			
 			textX = 50;
 		}
